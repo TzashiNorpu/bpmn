@@ -7,7 +7,9 @@ import {BpmnPropertiesPanelModule, BpmnPropertiesProviderModule, ZeebeProperties
 // 一个描述的json
 import ZeebeBpmnModdle from 'zeebe-bpmn-moddle/resources/zeebe.json'
 import {xmlStr} from '@/mock/xmlStr'
-import customTranslate from '@/custom-translate/custom-translate';
+import customTranslate from '@/custom-translate/custom-translate'
+
+
 const customTranslateModule = {
   translate: ['value', customTranslate]
 };
@@ -42,12 +44,23 @@ function init() {
 onMounted(async () => {
   init()
 })
+
+function saveDiagram() {
+  bpmnModeler.value?.saveXML({format: true}).then(function (result) {
+    console.log(result.xml);
+  });
+}
 </script>
 
 <template>
-  <div class="containers">
-    <div class="canvas" ref="canvas"></div>
-    <div id="js-properties-panel" class="panel"></div>
+  <div>
+    <div>
+      <el-button type="primary" @click="saveDiagram">保存</el-button>
+    </div>
+    <div class="containers">
+      <div class="canvas" ref="canvas"></div>
+      <div id="js-properties-panel" class="panel"></div>
+    </div>
   </div>
 </template>
 

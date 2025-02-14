@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --mode dev",
+    "front": "vite --mode front",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
@@ -13,8 +14,10 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
     "bpmn-js": "^18.2.0",
     "camunda-bpmn-moddle": "^7.0.1",
+    "element-plus": "^2.9.4",
     "pinia": "^2.3.1",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
@@ -35,7 +38,10 @@
     "prettier": "^3.4.2",
     "typescript": "~5.7.3",
     "vite": "^6.0.11",
+    "vite-plugin-compression": "^0.5.1",
+    "vite-plugin-svg-icons": "^2.0.1",
     "vite-plugin-vue-devtools": "^7.7.1",
+    "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.2.0"
   }
 }

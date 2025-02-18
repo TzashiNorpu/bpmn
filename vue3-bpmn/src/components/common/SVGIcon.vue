@@ -44,7 +44,7 @@ function hasIcon(name: string): boolean {
   return iconKeys.includes(name as keyof typeof Icon)
 }
 
-function iconComponent(name: string): Component| {
+function iconComponent(name: string): Component|null {
   return hasIcon(name) ? Icon[name as keyof typeof Icon] : null
 }
 

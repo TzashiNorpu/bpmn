@@ -1,16 +1,7 @@
 <template>
   <div class="root-container" v-loading="loading">
-    <div class="toolbar">
-      <el-button-group>
-        <el-button :icon="View" title="预览JSON" @click="handlePreviewXml" />
-        <el-button :icon="FolderOpened" title="导入BPMN文件" />
-        <el-button :icon="SaveIcon" title="保存" @click="handleSaveXml" />
-        <el-button :icon="Check" title="校验" @click="handleValidBpmn" />
-        <el-button :icon="RefreshLeft" title="重置" @click="handleReset" />
-        <el-button :icon="TopRight" title="新窗口打开" :disabled="route.name === 'workflow-ver-design'"
-          @click="handleOpenNew" />
-      </el-button-group>
-    </div>
+    <ToolBar :handlePreviewXml="handlePreviewXml" :handleSaveXml="handleSaveXml" :handleValidBpmn="handleValidBpmn"
+      :handleReset="handleReset" :handleOpenNew="handleOpenNew" :SaveIcon="SaveIcon" />
     <div style="width: 100%; height: calc(100% - 41px); position: relative">
       <div style="width: 100%; height: 100%;" ref="diagramRef"></div>
       <div style="position: absolute; top: 0; right: 0; height: 100%">
@@ -35,8 +26,7 @@
 
 <script lang="ts" setup>
 // import {useVerApi} from "@/service/workflow/ver";
-import {ElButtonGroup, ElButton, ElMessage, ElTooltip} from "element-plus/es";
-import {View, FolderOpened, Check, RefreshLeft, TopRight} from "@element-plus/icons-vue/dist/types";
+import {ElMessage, ElTooltip} from "element-plus/es";
 import {onMounted, provide, ref, shallowRef} from "vue";
 import BpmnModeler from "bpmn-js/lib/Modeler"
 import 'bpmn-js/dist/assets/bpmn-js.css';
@@ -45,30 +35,27 @@ import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-codes.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css';
 import 'diagram-js-minimap/assets/diagram-js-minimap.css'
-import miniMapModule from 'diagram-js-minimap'
+import MiniMap from 'diagram-js-minimap'
 import flowableDescriptor from "@/assets/flowable/descriptor.json"
-// import {useIcon} from "@/components/common/util";
-import CustomModdle from './component/moddle/CustomModdle'
 import Collapsed from "@/components/common/CustomCollapsed.vue";
-import PropertyPanel from '@/components/bpmn/PropertyPanel.vue'
+// import PropertyPanel from '@/components/bpmn/PropertyPanel.vue'
 import {
   bpmnModelerKey,
   bpmnSelectedElemKey,
-  modelingFieldKey,
-  modelingPageKey,
-  workflowVerKey
 } from "@/config/app.keys";
 // import {useModelingFieldApi} from "@/service/modeling/field";
-import emitter from "@/event/mitt";
-import XmlEditor from "@/components/common/XmlEditor.vue";
-import {useModelingPageApi} from "@/service/modeling/page";
+// import XmlEditor from "@/components/common/XmlEditor.vue";
+// import {useModelingPageApi} from "@/service/modeling/page";
 import ElementRegistry from 'diagram-js/lib/core/ElementRegistry'
-import {validate} from './bpmnlint'
+import {validate} from './bpmnlint.ts'
 import Canvas from "diagram-js/lib/core/Canvas";
-import {Shape} from 'bpmn-js/lib/model/Types'
+import type {Shape} from 'bpmn-js/lib/model/Types'
 import InitBPMNXml from '@/assets/bpmn/init.bpmn20.xml?raw'
 import {useRoute, useRouter} from "vue-router";
 import GridLineModule from 'diagram-js-grid-bg'
+import MyCustomContextPadProvider from "./context-pad/CustomContextPadProvider";
+import {useIcon} from "@/utils/util";
+import emitter from '@/event/mitt.ts'
 
 const route = useRoute()
 console.log('route', route, route.name)
@@ -83,13 +70,13 @@ interface Props {
 const props = defineProps<Props>()
 const propertiesPanelVisible = ref(false)
 const loading = ref(false)
-const {workflowVer, findVer, updateXml} = useVerApi(loading)
-const {modelingFields, findModelingFields} = useModelingFieldApi(loading)
-const {pageList, findModulePages} = useModelingPageApi(loading)
+// const {workflowVer, findVer, updateXml} = useVerApi(loading)
+// const {modelingFields, findModelingFields} = useModelingFieldApi(loading)
+// const {pageList, findModulePages} = useModelingPageApi(loading)
 
-provide(workflowVerKey, workflowVer)
-provide(modelingFieldKey, modelingFields)
-provide(modelingPageKey, pageList)
+// provide(workflowVerKey, workflowVer)
+// provide(modelingFieldKey, modelingFields)
+// provide(modelingPageKey, pageList)
 
 const diagramRef = ref<HTMLDivElement>()
 
@@ -111,10 +98,9 @@ function initDiagram() {
       {
         // 禁用滚轮滚动
         zoomScroll: ["value", ""],
-
       },
-      miniMapModule,
-      CustomModdle,
+      MiniMap,
+      MyCustomContextPadProvider,
       GridLineModule,
     ],
     moddleExtensions: {
@@ -126,11 +112,11 @@ function initDiagram() {
   })
 
   loading.value = true
-  findVer(props.verId)
-    .then(() => findModelingFields('WORKFLOW', workflowVer.value!.key))
-    .then(() => findModulePages({module: 'WORKFLOW', mkey: workflowVer.value!.key}))
-    .then(() => importXML(workflowVer.value!.xml))
-    .finally(() => loading.value = false)
+  // findVer(props.verId)
+  //   .then(() => findModelingFields('WORKFLOW', workflowVer.value!.key))
+  //   .then(() => findModulePages({module: 'WORKFLOW', mkey: workflowVer.value!.key}))
+  //   .then(() => importXML(workflowVer.value!.xml))
+  //   .finally(() => loading.value = false)
 
 }
 
@@ -139,12 +125,12 @@ async function importXML(xml: string) {
     if (!bpmnModeler.value) {
       return
     }
-    const result = await bpmnModeler.value.importXML(xml)
+    await bpmnModeler.value.importXML(xml)
     const canvas = bpmnModeler.value.get<Canvas>('canvas')
     if (!canvas) {
       return
     }
-    // @ts-ignore
+    // @ts-expect-error "fit-viewport" is not in the type definition
     canvas.zoom("fit-viewport", true);
     canvas.zoom(Math.ceil(scale.value / 100));
 
@@ -287,13 +273,6 @@ div {
   border: 1px solid var(--el-border-color);
 }
 
-.toolbar {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 4px;
-  background-color: var(--toolbar-bg-color);
-  border-bottom: 1px solid var(--el-border-color);
-}
 
 :deep(.djs-minimap) {
   top: initial;

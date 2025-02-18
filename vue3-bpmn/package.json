@@ -14,14 +14,12 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-
-    "@element-plus/icons-vue": "^2.3.1",
-
-    "camunda-bpmn-moddle": "^7.0.1",
-
     "@bpmn-io/properties-panel": "^3.25.1",
+    "@element-plus/icons-vue": "^2.3.1",
     "bpmn-js": "^18.2.0",
-
+    "camunda-bpmn-moddle": "^7.0.1",
+    "diagram-js-grid-bg": "^1.1.0",
+    "diagram-js-minimap": "^5.2.0",
     "element-plus": "^2.9.4",
     "pinia": "^2.3.1",
     "vue": "^3.5.13",

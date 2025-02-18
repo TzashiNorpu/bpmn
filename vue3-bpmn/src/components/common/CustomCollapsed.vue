@@ -1,3 +1,30 @@
+/**
+ * CustomCollapsed.vue
+ *
+ * 这是一个 Vue 3 组件，用于创建一个可折叠的内容区域。该组件允许用户通过点击按钮来折叠或展开内容。
+ *
+ * Props:
+ * - modelValue (boolean): 控制内容是否折叠的布尔值。
+ * - position ('left' | 'top' | 'bottom' | 'right'): 指定折叠按钮的位置。
+ *
+ * Emits:
+ * - update:modelValue (boolean): 当折叠状态改变时触发，传递新的折叠状态。
+ *
+ * Computed Properties:
+ * - collapsed: 计算属性，用于获取和设置折叠状态。
+ * - toggleButtonBoxClass: 计算属性，根据 position 属性返回相应的 CSS 类名。
+ * - toggleBarLeftStyle: 计算属性，根据 position 属性返回左侧折叠按钮的样式。
+ * - toggleBarRightStyle: 计算属性，根据 position 属性返回右侧折叠按钮的样式。
+ *
+ * Scoped Styles:
+ * - .collapse-content-wrap: 定义内容区域的基本样式。
+ * - .toggle-button-box: 定义折叠按钮的基本样式。
+ * - .toggle-button-box.bottom-to-top: 定义从下往上折叠按钮的样式。
+ * - .toggle-button-box.top-to-bottom: 定义从上往下折叠按钮的样式。
+ * - .toggle-button-box.left-to-right: 定义从左往右折叠按钮的样式。
+ * - .toggle-button-box.right-to-left: 定义从右往左折叠按钮的样式。
+ * - 各种 hover 状态下的样式，用于在鼠标悬停时改变折叠按钮的外观。
+ */
 <template>
   <div class="collapse-content-wrap" :class="collapsed ? 'collapsed' : undefined">
     <transition name="el-fade-in-linear">

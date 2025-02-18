@@ -13,6 +13,7 @@ import type {
   EventBus,
   ContextPadEntries,
   Element,
+  AppendPreview,
 } from 'bpmn-js/lib/features/context-pad/ContextPadProvider'
 import Canvas from 'diagram-js/lib/core/Canvas'
 import { isAny } from 'bpmn-js/lib/features/modeling/util/ModelingUtil'
@@ -23,6 +24,7 @@ import { assign, forEach, isArray } from 'min-dash'
 import type { ContextPadTarget } from 'diagram-js/lib/features/context-pad/ContextPad'
 import AutoPlace from 'bpmn-js/lib/features/auto-place/BpmnAutoPlace'
 import type { Shape } from 'bpmn-js/lib/model/Types'
+import type { ModdleElement } from 'bpmn-js/lib/BaseViewer'
 
 export default class CustomContextPadProvider extends ContextPadProvider {
   static $inject: string[] = [
@@ -38,6 +40,7 @@ export default class CustomContextPadProvider extends ContextPadProvider {
     'canvas',
     'rules',
     'translate',
+    'appendPreview',
   ]
 
   protected _contextPad: ContextPad
@@ -50,6 +53,7 @@ export default class CustomContextPadProvider extends ContextPadProvider {
   protected _rules
   protected _translate
   protected _autoPlace
+  protected _appendPreview
 
   constructor(
     config: ContextPadConfig,
@@ -64,6 +68,7 @@ export default class CustomContextPadProvider extends ContextPadProvider {
     canvas: Canvas,
     rules: Rules,
     translate: Translate,
+    appendPreview: AppendPreview,
   ) {
     super(
       config,
@@ -78,6 +83,7 @@ export default class CustomContextPadProvider extends ContextPadProvider {
       canvas,
       rules,
       translate,
+      appendPreview,
     )
     this._contextPad = contextPad
     this._modeling = modeling
@@ -91,6 +97,7 @@ export default class CustomContextPadProvider extends ContextPadProvider {
     if (config?.autoPlace !== false) {
       this._autoPlace = injector.get<AutoPlace>('autoPlace', false)
     }
+    this._appendPreview = appendPreview
   }
 
   public getContextPadEntries(element: Element): ContextPadEntries {
@@ -113,11 +120,11 @@ export default class CustomContextPadProvider extends ContextPadProvider {
 
     const businessObject = element.businessObject
 
-    function startConnect(event: MouseEvent | TouchEvent, start: Element) {
+    function startConnect(event: MouseEvent | TouchEvent) {
       connect.start(event, element)
     }
 
-    function removeElement(e: any) {
+    function removeElement() {
       modeling.removeElements([element])
     }
 
@@ -157,7 +164,7 @@ export default class CustomContextPadProvider extends ContextPadProvider {
         title = translate('Append {type}', { type: type.replace(/^bpmn:/, '') })
       }
 
-      function appendStart(event: any, element: any) {
+      function appendStart(event: Event, element: Element) {
         const shape = elementFactory.createShape(assign({ type: type }, options))
         create.start(event, shape, {
           source: element,
@@ -165,7 +172,8 @@ export default class CustomContextPadProvider extends ContextPadProvider {
       }
 
       const append = autoPlace
-        ? function (event: MouseEvent | TouchEvent, element: Element) {
+        ? function (_: MouseEvent | TouchEvent, element: Element) {
+            console.log('AutoPlace appendAction')
             const shape = elementFactory.createShape(assign({ type: type }, options))
             autoPlace.append(element, shape)
           }
@@ -215,7 +223,7 @@ export default class CustomContextPadProvider extends ContextPadProvider {
       const append = autoPlace
         ? function (event: TouchEvent | MouseEvent, element: Element) {
             const shape = elementFactory.createShape(assign({ type: type }, options))
-
+            console.log('AutoPlace appendGroupAction')
             autoPlace.append(element, shape)
           }
         : appendStart
@@ -493,12 +501,15 @@ export default class CustomContextPadProvider extends ContextPadProvider {
  *
  * @return {boolean}
  */
-function isEventType(businessObject: any, type: string, eventDefinitionType: string) {
+interface EventDefinition {
+  $type: string
+}
+function isEventType(businessObject: ModdleElement, type: string, eventDefinitionType: string) {
   const isType = businessObject.$instanceOf(type)
   let isDefinition = false
 
-  const definitions = businessObject.eventDefinitions || []
-  forEach(definitions, function (def: any) {
+  const definitions: EventDefinition[] = businessObject.eventDefinitions || []
+  forEach(definitions, function (def: EventDefinition) {
     if (def.$type === eventDefinitionType) {
       isDefinition = true
     }

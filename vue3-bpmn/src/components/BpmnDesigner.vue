@@ -65,7 +65,7 @@ import { bpmnModelerKey, bpmnSelectedElemKey } from '@/config/app.keys'
 // import XmlEditor from "@/components/common/XmlEditor.vue";
 // import {useModelingPageApi} from "@/service/modeling/page";
 import ElementRegistry from 'diagram-js/lib/core/ElementRegistry'
-import { validate } from './bpmnlint.ts'
+import { validate } from './bpmnlint'
 import Canvas from 'diagram-js/lib/core/Canvas'
 import type { Shape } from 'bpmn-js/lib/model/Types'
 import {xmlStr} from '@/mock/xmlStr'
@@ -73,7 +73,7 @@ import { useRoute } from 'vue-router'
 import GridLineModule from 'diagram-js-grid-bg'
 import MyCustomContextPadProvider from '@/components/context-pad'
 import { useIcon } from '@/utils/util'
-import emitter from '@/event/mitt.ts'
+import emitter from '@/event/mitt'
 import { View, FolderOpened, Check, RefreshLeft } from "@element-plus/icons-vue";
 const route = useRoute()
 console.log('route', route, route.name)

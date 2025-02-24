@@ -13,9 +13,9 @@ import type {
   Canvas,
   ContextPadEntries,
 } from 'bpmn-js/lib/features/context-pad/ContextPadProvider'
-import AutoPlace from 'bpmn-js/lib/features/auto-place/BpmnAutoPlace'
+import AutoPlace from 'diagram-js/lib/features/auto-place/AutoPlace'
 import type { Element } from 'diagram-js/lib/model/Types'
-import type { Element as BPMNElement, Shape } from 'bpmn-js/lib/model/Types'
+import type { Element as BPMNElement, ModdleElement, Shape } from 'bpmn-js/lib/model/Types'
 import type ContextPadProvider from 'bpmn-js/lib/features/context-pad/ContextPadProvider'
 import type { ContextPadTarget } from 'diagram-js/lib/features/context-pad/ContextPad'
 import { isAny } from 'bpmn-js/lib/features/modeling/util/ModelingUtil'
@@ -80,7 +80,7 @@ export default class CustomContextPadProvider implements ContextPadProvider {
     if (config?.autoPlace !== false) {
       this._autoPlace = injector.get<AutoPlace>('autoPlace', false)
     }
-    // this._contextPad.registerProvider(1, this)
+    this._contextPad.registerProvider(1500, this)
   }
 
   getContextPadEntries(ele: Element): ContextPadEntries {
@@ -149,17 +149,18 @@ export default class CustomContextPadProvider implements ContextPadProvider {
         })
       }
 
-      function appendStart(event: MouseEvent, element: Element) {
+      function appendStart(event: MouseEvent, source: Element) {
         const shape = elementFactory.createShape(assign({ type: type }, options))
         create.start(event, shape, {
-          source: element,
+          source: source,
         })
       }
 
       const append = autoPlace
-        ? function (event: MouseEvent | TouchEvent, element: Element) {
+        ? function (event: MouseEvent | TouchEvent, source: Shape) {
+            console.log('autoPlace appendAction：', autoPlace)
             const shape = elementFactory.createShape(assign({ type: type }, options))
-            autoPlace.append(element, shape)
+            autoPlace.append(source, shape)
           }
         : appendStart
 
@@ -207,9 +208,9 @@ export default class CustomContextPadProvider implements ContextPadProvider {
       }
 
       const append = autoPlace
-        ? function (event: TouchEvent | MouseEvent, element: Element) {
+        ? function (event: TouchEvent | MouseEvent, source: Shape) {
             const shape = elementFactory.createShape(assign({ type: type }, options))
-            autoPlace.append(element, shape)
+            autoPlace.append(source, shape)
           }
         : appendStart
 
@@ -505,12 +506,12 @@ export default class CustomContextPadProvider implements ContextPadProvider {
  *
  * @return {boolean}
  */
-function isEventType(businessObject: any, type: string, eventDefinitionType: string) {
+function isEventType(businessObject: ModdleElement, type: string, eventDefinitionType: string) {
   const isType = businessObject.$instanceOf(type)
   let isDefinition = false
 
   const definitions = businessObject.eventDefinitions || []
-  forEach(definitions, function (def: any) {
+  forEach(definitions, function (def: ModdleElement) {
     if (def.$type === eventDefinitionType) {
       isDefinition = true
     }

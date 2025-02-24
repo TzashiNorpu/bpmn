@@ -1,4 +1,3 @@
-import ContextPadProvider from 'bpmn-js/lib/features/context-pad/ContextPadProvider'
 import type {
   Connect,
   ContextPad,
@@ -11,22 +10,20 @@ import type {
   Injector,
   Translate,
   EventBus,
+  Canvas,
   ContextPadEntries,
-  Element,
-  AppendPreview,
 } from 'bpmn-js/lib/features/context-pad/ContextPadProvider'
-import Canvas from 'diagram-js/lib/core/Canvas'
+import AutoPlace from 'bpmn-js/lib/features/auto-place/BpmnAutoPlace'
+import type { Element } from 'diagram-js/lib/model/Types'
+import type { Element as BPMNElement, Shape } from 'bpmn-js/lib/model/Types'
+import type ContextPadProvider from 'bpmn-js/lib/features/context-pad/ContextPadProvider'
+import type { ContextPadTarget } from 'diagram-js/lib/features/context-pad/ContextPad'
 import { isAny } from 'bpmn-js/lib/features/modeling/util/ModelingUtil'
 import { isEventSubProcess, isExpanded } from 'bpmn-js/lib/util/DiUtil'
 import { getChildLanes } from 'bpmn-js/lib/features/modeling/util/LaneUtil'
 import { is } from 'bpmn-js/lib/util/ModelUtil'
 import { assign, forEach, isArray } from 'min-dash'
-import type { ContextPadTarget } from 'diagram-js/lib/features/context-pad/ContextPad'
-import AutoPlace from 'bpmn-js/lib/features/auto-place/BpmnAutoPlace'
-import type { Shape } from 'bpmn-js/lib/model/Types'
-import type { ModdleElement } from 'bpmn-js/lib/BaseViewer'
-
-export default class CustomContextPadProvider extends ContextPadProvider {
+export default class CustomContextPadProvider implements ContextPadProvider {
   static $inject: string[] = [
     'config.contextPad',
     'injector',
@@ -40,7 +37,7 @@ export default class CustomContextPadProvider extends ContextPadProvider {
     'canvas',
     'rules',
     'translate',
-    'appendPreview',
+    // 'contextPadProvider',
   ]
 
   protected _contextPad: ContextPad
@@ -53,7 +50,7 @@ export default class CustomContextPadProvider extends ContextPadProvider {
   protected _rules
   protected _translate
   protected _autoPlace
-  protected _appendPreview
+  // private _contextPadProvider: ContextPadProvider
 
   constructor(
     config: ContextPadConfig,
@@ -68,23 +65,8 @@ export default class CustomContextPadProvider extends ContextPadProvider {
     canvas: Canvas,
     rules: Rules,
     translate: Translate,
-    appendPreview: AppendPreview,
+    // contextPadProvider: ContextPadProvider,
   ) {
-    super(
-      config,
-      injector,
-      eventBus,
-      contextPad,
-      modeling,
-      elementFactory,
-      connect,
-      create,
-      popupMenu,
-      canvas,
-      rules,
-      translate,
-      appendPreview,
-    )
     this._contextPad = contextPad
     this._modeling = modeling
     this._elementFactory = elementFactory
@@ -94,13 +76,14 @@ export default class CustomContextPadProvider extends ContextPadProvider {
     this._canvas = canvas
     this._rules = rules
     this._translate = translate
+    // this._contextPadProvider = contextPadProvider
     if (config?.autoPlace !== false) {
       this._autoPlace = injector.get<AutoPlace>('autoPlace', false)
     }
-    this._appendPreview = appendPreview
+    // this._contextPad.registerProvider(1, this)
   }
 
-  public getContextPadEntries(element: Element): ContextPadEntries {
+  getContextPadEntries(ele: Element): ContextPadEntries {
     const contextPad = this._contextPad
     const modeling = this._modeling
     const elementFactory = this._elementFactory
@@ -111,21 +94,20 @@ export default class CustomContextPadProvider extends ContextPadProvider {
     const rules = this._rules
     const translate = this._translate
     const autoPlace = this._autoPlace
-
     const actions = {}
 
-    if (element.type === 'label') {
+    if (ele.type === 'label') {
       return actions
     }
 
-    const businessObject = element.businessObject
+    const businessObject = ele.businessObject
 
     function startConnect(event: MouseEvent | TouchEvent) {
-      connect.start(event, element)
+      connect.start(event, ele)
     }
 
     function removeElement() {
-      modeling.removeElements([element])
+      modeling.removeElements([ele as BPMNElement])
     }
 
     function getReplaceMenuPosition(element: ContextPadTarget) {
@@ -159,12 +141,15 @@ export default class CustomContextPadProvider extends ContextPadProvider {
      * @return {Object} descriptor
      */
     function appendAction(type: string, className: string, title?: string, options?: object) {
+      console.log('appendAction')
       if (typeof title !== 'string') {
         options = title
-        title = translate('Append {type}', { type: type.replace(/^bpmn:/, '') })
+        title = translate('Append {type}', {
+          type: type.replace(/^bpmn:/, ''),
+        })
       }
 
-      function appendStart(event: Event, element: Element) {
+      function appendStart(event: MouseEvent, element: Element) {
         const shape = elementFactory.createShape(assign({ type: type }, options))
         create.start(event, shape, {
           source: element,
@@ -172,8 +157,7 @@ export default class CustomContextPadProvider extends ContextPadProvider {
       }
 
       const append = autoPlace
-        ? function (_: MouseEvent | TouchEvent, element: Element) {
-            console.log('AutoPlace appendAction')
+        ? function (event: MouseEvent | TouchEvent, element: Element) {
             const shape = elementFactory.createShape(assign({ type: type }, options))
             autoPlace.append(element, shape)
           }
@@ -210,7 +194,9 @@ export default class CustomContextPadProvider extends ContextPadProvider {
     ) {
       if (typeof title !== 'string') {
         options = title
-        title = translate('Append {type}', { type: type.replace(/^bpmn:/, '') })
+        title = translate('Append {type}', {
+          type: type.replace(/^bpmn:/, ''),
+        })
       }
 
       function appendStart(event: TouchEvent | MouseEvent, element: Element) {
@@ -223,7 +209,6 @@ export default class CustomContextPadProvider extends ContextPadProvider {
       const append = autoPlace
         ? function (event: TouchEvent | MouseEvent, element: Element) {
             const shape = elementFactory.createShape(assign({ type: type }, options))
-            console.log('AutoPlace appendGroupAction')
             autoPlace.append(element, shape)
           }
         : appendStart
@@ -249,9 +234,11 @@ export default class CustomContextPadProvider extends ContextPadProvider {
         contextPad.open(element, true)
       }
     }
-
-    if (isAny(businessObject, ['bpmn:Lane', 'bpmn:Participant']) && isExpanded(element)) {
-      const childLanes = getChildLanes(element as Shape)
+    if (
+      isAny(businessObject, ['bpmn:Lane', 'bpmn:Participant']) &&
+      isExpanded(ele as BPMNElement)
+    ) {
+      const childLanes = getChildLanes(ele as Shape)
 
       assign(actions, {
         'lane-insert-above': {
@@ -267,7 +254,7 @@ export default class CustomContextPadProvider extends ContextPadProvider {
       })
 
       if (childLanes.length < 2) {
-        if (element.height >= 120) {
+        if (ele.height >= 120) {
           assign(actions, {
             'lane-divide-two': {
               group: 'lane-divide',
@@ -280,7 +267,7 @@ export default class CustomContextPadProvider extends ContextPadProvider {
           })
         }
 
-        if (element.height >= 180) {
+        if (ele.height >= 180) {
           assign(actions, {
             'lane-divide-three': {
               group: 'lane-divide',
@@ -385,7 +372,7 @@ export default class CustomContextPadProvider extends ContextPadProvider {
       }
     }
 
-    if (!popupMenu.isEmpty(element, 'bpmn-replace')) {
+    if (!popupMenu.isEmpty(ele, 'bpmn-replace')) {
       // Replace menu entry
       assign(actions, {
         replace: {
@@ -470,11 +457,13 @@ export default class CustomContextPadProvider extends ContextPadProvider {
     }
 
     // delete element entry, only show if allowed by rules
-    let deleteAllowed = rules.allowed('elements.delete', { elements: [element] })
+    let deleteAllowed = rules.allowed('elements.delete', {
+      elements: [ele],
+    })
 
     if (isArray(deleteAllowed)) {
       // was the element returned as a deletion candidate?
-      deleteAllowed = deleteAllowed[0] === element
+      deleteAllowed = deleteAllowed[0] === ele
     }
 
     if (deleteAllowed) {
@@ -489,8 +478,23 @@ export default class CustomContextPadProvider extends ContextPadProvider {
         },
       })
     }
-
     return actions
+  }
+  getMultiElementContextPadEntries(eles: Element[]): ContextPadEntries {
+    return {
+      'append.lindaidai-task': {
+        group: 'model',
+        className: 'icon-custom lindaidai-task',
+        action: {
+          click: () => {
+            console.log(eles)
+          },
+          dragstart: () => {
+            console.log(eles)
+          },
+        },
+      },
+    }
   }
 }
 
@@ -501,15 +505,12 @@ export default class CustomContextPadProvider extends ContextPadProvider {
  *
  * @return {boolean}
  */
-interface EventDefinition {
-  $type: string
-}
-function isEventType(businessObject: ModdleElement, type: string, eventDefinitionType: string) {
+function isEventType(businessObject: any, type: string, eventDefinitionType: string) {
   const isType = businessObject.$instanceOf(type)
   let isDefinition = false
 
-  const definitions: EventDefinition[] = businessObject.eventDefinitions || []
-  forEach(definitions, function (def: EventDefinition) {
+  const definitions = businessObject.eventDefinitions || []
+  forEach(definitions, function (def: any) {
     if (def.$type === eventDefinitionType) {
       isDefinition = true
     }

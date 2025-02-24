@@ -14,7 +14,7 @@
 
 <script lang="ts" setup>
 import {ElButtonGroup, ElButton} from "element-plus/es";
-import {View, FolderOpened, Check, RefreshLeft, TopRight} from "@element-plus/icons-vue/dist/types";
+import { View, FolderOpened, Check, RefreshLeft, TopRight } from "@element-plus/icons-vue";
 import {useRoute} from "vue-router";
 
 const route = useRoute();

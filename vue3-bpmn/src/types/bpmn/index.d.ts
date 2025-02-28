@@ -8,6 +8,13 @@ declare interface ExecutionListenerObject {
   fields?: ListenerField[]
 }
 
+declare interface TaskListenerObject {
+  event?: TaskListenerEvent
+  type: ListenerValueType
+  value: string
+  fields?: ListenerField[]
+}
+
 declare type ExecutionListenerFieldType = 'string' | 'expression'
 declare interface ListenerField {
   name: string
@@ -16,12 +23,6 @@ declare interface ListenerField {
 }
 
 declare type TaskListenerEvent = 'create' | 'assignment' | 'complete' | 'delete'
-declare interface TaskListenerObject {
-  event?: TaskListenerEvent
-  type: ListenerValueType
-  value: string
-  fields?: ListenerField[]
-}
 
 declare interface SelectionChangedEvent {
   newSelection: import('bpmn-js/lib/model/Types').Element[]

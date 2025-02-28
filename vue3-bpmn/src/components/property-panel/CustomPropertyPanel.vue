@@ -93,7 +93,7 @@
       </el-form>
       <el-descriptions
         :column="3"
-        border
+        border-width="1"
         style="margin-top: 10px"
       >
         <template #title>

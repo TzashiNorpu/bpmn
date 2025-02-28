@@ -1,10 +1,12 @@
 <template>
   <el-scrollbar height="400px" always>
     <el-form ref="formRef" :model="listener" label-width="100px" style="margin-top: 6px">
-      <el-form-item v-if="selectedElem?.type !== 'bpmn:SequenceFlow'" prop="event" label="事件" required>
+      <el-form-item prop="event" label="事件" required>
         <el-radio-group v-model="listener.event">
-          <el-radio-button value="start">开始</el-radio-button>
-          <el-radio-button value="end">结束</el-radio-button>
+          <el-radio-button value="assignment">指派</el-radio-button>
+          <el-radio-button value="create">创建</el-radio-button>
+          <el-radio-button value="complete">完成</el-radio-button>
+          <el-radio-button value="delete">删除</el-radio-button>
         </el-radio-group>
       </el-form-item>
       <el-form-item prop="type" label="类型" required>
@@ -26,32 +28,22 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  ElScrollbar,
-  ElForm,
-  ElFormItem,
-  ElRadioGroup,
-  ElRadioButton,
-  ElInput,
-} from 'element-plus'
-import {ref} from "vue";
-import {useBpmnSelectedElem} from "@/config/app.hooks";
-import ListenerFieldInject from "./ListenerFieldInject.vue";
+import { ElScrollbar, ElForm, ElFormItem, ElRadioGroup, ElRadioButton, ElInput } from 'element-plus'
+import { ref } from "vue";
+import ListenerFieldInject from "@/components/property-panel/components/ListenerFieldInject.vue";
 
 interface Props {
-  listener: ExecutionListenerObject
+  listener: TaskListenerObject
 }
+
 defineProps<Props>()
-
-
-const selectedElem = useBpmnSelectedElem()
 
 const formRef = ref<InstanceType<typeof ElForm>>()
 const fieldRef = ref<InstanceType<typeof ListenerFieldInject>>()
 
 async function validate() {
-  await formRef.value?.validate()
   await fieldRef.value?.validate()
+  await formRef.value?.validate()
 }
 
 defineExpose({
@@ -62,7 +54,9 @@ defineExpose({
 </script>
 
 <style scoped>
+
 :deep(.listener-field-table.vxe-table--render-default .vxe-header--column:not(.col--ellipsis)) {
   padding: 0;
 }
+
 </style>

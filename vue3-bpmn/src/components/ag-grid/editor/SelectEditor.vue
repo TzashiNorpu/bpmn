@@ -1,4 +1,3 @@
-
 <template>
   <div class="ag-cell-edit-wrapper">
     <el-select v-bind="params?.componentProps" v-model="selectedValue" :popper-class="AG_EDITOR_SELECT">

@@ -214,6 +214,7 @@ const gridOptions: GridOptions<ListenerField> = {
     bindClickEvent()
 
     // 设置网格的行数据，如果没有提供则使用空数组
+    // event.api.setRowData(props.listener.fields || [])
     event.api.setRowData(props.listener.fields || [])
   },
   onFirstDataRendered(event: FirstDataRenderedEvent<ListenerField>) {

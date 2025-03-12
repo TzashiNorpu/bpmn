@@ -1,11 +1,12 @@
 <template>
   <ag-grid-vue ref="gridRef" style="width: 100%; height: 100%" class="ag-grid-wrapper" :class="themeStore.AGGridClass"
-    :grid-options="gridOptions" v-click-outside="handleClickGridOutside" />
+    :grid-options="gridOptions" v-click-outside="handleClickGridOutside" :row-data="props.listener.fields || []" />
 </template>
 <script lang="ts" setup>
 import {Plus, Delete} from '@element-plus/icons-vue'
-import {shallowRef, onUnmounted} from "vue";
+import {shallowRef, onUnmounted, unref} from "vue";
 import {AgGridVue} from "ag-grid-vue3";
+// import type {AgGridVue} from "ag-grid-vue3";
 import {useThemeStore} from "@/store/theme";
 import {
   // type ColumnApi,
@@ -13,12 +14,15 @@ import {
   type GridApi,
   type GridOptions,
   type GridReadyEvent,
-  type ICellRendererParams, RowNode
+  type ICellRendererParams, type IRowNode
 } from "ag-grid-community";
 import GridActionCell from "@/components/ag-grid/cell/GridActionCell.vue";
 import SelectEditor from "@/components/ag-grid/editor/SelectEditor.vue";
 import InputEditor from "@/components/ag-grid/editor/InputEditor.vue";
 import {AG_EDITOR_SELECT} from "@/components/ag-grid/editor";
+import emitter from '@/event/mitt'
+import type {MYANY} from '@/types/type';
+
 
 interface Props {
   listener: TaskListenerObject
@@ -163,8 +167,8 @@ const gridOptions: GridOptions<ListenerField> = {
                 ]
               });
 
-              props.listener.fields?.push(newRow)  // 将新行添加到字段列表中
-
+              // props.listener.fields?.push(newRow)  // 将新行添加到字段列表中
+              emitter.emit('listenerFieldAdd', {row: newRow})  // 发送监听器字段添加事件
               const rowCount = params.api.getDisplayedRowCount();  // 获取当前行数
               params.api.startEditingCell({  // 开始编辑新行的第一个单元格
                 rowIndex: rowCount - 1,
@@ -192,7 +196,10 @@ const gridOptions: GridOptions<ListenerField> = {
               })
 
               const idx = props.listener.fields?.indexOf(params.data) || -1  // 查找当前行在字段列表中的索引
-              idx !== -1 && props.listener.fields?.splice(idx, 1)  // 如果找到，则从字段列表中移除当前行
+              // idx !== -1 && props.listener.fields?.splice(idx, 1)  // 如果找到，则从字段列表中移除当前行
+              if (idx !== -1) {
+                emitter.emit('listenerFieldDelete', {idx: idx})  // 发送监听器字段删除事件
+              }
             }
           }
         ]
@@ -215,7 +222,6 @@ const gridOptions: GridOptions<ListenerField> = {
 
     // 设置网格的行数据，如果没有提供则使用空数组
     // event.api.setRowData(props.listener.fields || [])
-    event.api.setRowData(props.listener.fields || [])
   },
   onFirstDataRendered(event: FirstDataRenderedEvent<ListenerField>) {
     event.api.sizeColumnsToFit()
@@ -226,8 +232,9 @@ async function validate() {
   if (!gridApi.value) {
     return
   }
-  const errorList: Array<{field: string, fieldValue: any, message: string}> = []
-  gridApi.value.getModel().forEachNode((rowNode: RowNode<ListenerField>, index) => {
+  const errorList: Array<{field: string, fieldValue: MYANY, message: string}> = []
+
+  gridApi.value.forEachNode((rowNode: IRowNode<ListenerField>, index: number) => {
     if (!rowNode.data) {
       return
     }
@@ -269,19 +276,30 @@ function handleClickGridOutside(up: MouseEvent, down: MouseEvent) {
     }
     parentElem = parentElem.parentElement
   }
+  console.log(down);
+
   gridApi.value?.stopEditing(false)
 }
 
-const gridRef = shallowRef<InstanceType<typeof AgGridVue>>()
+const gridRef = shallowRef<typeof AgGridVue>()
+
 const bodyContainer = shallowRef<HTMLDivElement>()
 const headerContainer = shallowRef<HTMLDivElement>()
 
 function bindClickEvent() {
-  bodyContainer.value = gridRef.value?.$el.querySelector("div.ag-center-cols-viewport") as HTMLDivElement
-  bodyContainer.value?.addEventListener("mousedown", handleCancelEditing)
+  const gridComponent = unref(gridRef);
+  if (gridComponent && gridComponent instanceof HTMLElement) {
+    bodyContainer.value = gridComponent.querySelector("div.ag-center-cols-viewport") as HTMLDivElement;
+    bodyContainer.value?.addEventListener("mousedown", handleCancelEditing);
 
-  headerContainer.value = gridRef.value?.$el.querySelector("div.ag-header-viewport") as HTMLDivElement
-  headerContainer.value?.addEventListener("mousedown", handleCancelEditing)
+    headerContainer.value = gridComponent.querySelector("div.ag-header-viewport") as HTMLDivElement;
+    headerContainer.value?.addEventListener("mousedown", handleCancelEditing);
+  }
+  // bodyContainer.value = gridRef.value?.$el.querySelector("div.ag-center-cols-viewport") as HTMLDivElement
+  // bodyContainer.value?.addEventListener("mousedown", handleCancelEditing)
+
+  // headerContainer.value = gridRef.value?.$el.querySelector("div.ag-header-viewport") as HTMLDivElement
+  // headerContainer.value?.addEventListener("mousedown", handleCancelEditing)
 }
 
 function handleCancelEditing(ev: MouseEvent) {

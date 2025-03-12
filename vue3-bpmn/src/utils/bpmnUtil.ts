@@ -4,8 +4,8 @@ import Modeling from 'bpmn-js/lib/features/modeling/Modeling'
 import ElementRegistry from 'diagram-js/lib/core/ElementRegistry'
 import BpmnFactory from 'bpmn-js/lib/features/modeling/BpmnFactory'
 import type { MYANY } from '@/types/type'
-import type { Element } from 'diagram-js/lib/model'
-
+// import type { Element } from 'diagram-js/lib/model'
+import { type Element } from 'bpmn-js/lib/model/Types'
 export default class BpmnUtil {
   private bpmnModeler: ShallowRef<BpmnModeler | undefined>
 

@@ -38,7 +38,7 @@
 </template>
 
 <script lang="ts" setup>
-import {computed, onUnmounted, toRaw, ref, shallowRef} from "vue"
+import {computed, onUnmounted, toRaw, ref, shallowRef, onMounted} from "vue"
 import {ElTable, ElTableColumn, ElDivider, ElButton, ElMessage} from "element-plus"
 import emitter from '@/event/mitt'
 import TaskListenerCreate from './TaskListenerCreate.vue'
@@ -287,6 +287,16 @@ onUnmounted(() => emitter.off('bpmnElementChanged', handleElementChanged))
 emitter.on('bpmnSelectionChanged', handleSelectionChanged)
 onUnmounted(() => emitter.off('bpmnSelectionChanged', handleSelectionChanged))
 
+onMounted(() => {
+  emitter.on('listenerFieldAdd', (payload: {row: ListenerField}) => {listenerObject.value?.fields?.push(payload.row)})
+})
+onUnmounted(() => emitter.off('listenerFieldAdd'))
+
+onMounted(() => {
+  emitter.on('listenerFieldDelete', (payload: {idx: number}) => {
+    listenerObject.value?.fields?.splice(payload.idx, 1)
+  })
+})
 </script>
 
 <style scoped>

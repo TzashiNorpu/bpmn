@@ -1,72 +1,73 @@
 <template>
   <el-scrollbar always>
     <el-collapse v-model="expand">
-      <el-collapse-item name="base-setting">
-        <template #title>
-          <div class="collapse-title"><s-v-g-icon style="width: 1em; height: 1em" name="Setting" /><span
-              style="margin-left: 6px">基本设置</span></div>
-        </template>
+      <el-collapse-item name="base-setting" title="基本设置">
+        <!-- <template #title> -->
+          <!-- <div class="collapse-title"><s-v-g-icon style="width: 1em; height: 1em" name="Setting" /><span -->
+              <!-- style="margin-left: 6px">基本设置</span></div> -->
+        <!-- </template> -->
         <BasicSetting></BasicSetting>
       </el-collapse-item>
-      <el-collapse-item name="task-listener" v-show="bpmnSelectedElem?.type?.endsWith('UserTask')">
-        <template #title>
-          <div class="collapse-title"><s-v-g-icon style="width: 1em; height: 1em" name="TaskListening" /><span
-              style="margin-left: 6px">任务监听</span></div>
-        </template>
+      <el-collapse-item name="task-listener" title="任务监听" v-show="bpmnSelectedElem?.type?.endsWith('UserTask')">
+        <!-- <template #title> -->
+          <!-- <div class="collapse-title"><s-v-g-icon style="width: 1em; height: 1em" name="TaskListening" /><span -->
+              <!-- style="margin-left: 6px">任务监听</span></div> -->
+        <!-- </template> -->
         <div style="width: 100%; height: 100%; position: relative; ">
           <TaskListener />
           <div id="task-listener-panel"></div>
         </div>
       </el-collapse-item>
       <el-collapse-item name="execution-listener"
+        title="执行监听"
         v-show="bpmnSelectedElem?.type?.endsWith('UserTask') || bpmnSelectedElem?.type?.endsWith('SequenceFlow')">
-        <template #title>
-          <div class="collapse-title"><s-v-g-icon style="width: 1em; height: 1em" name="Notification" /><span
-              style="margin-left: 6px">执行监听</span></div>
-        </template>
+        <!-- <template #title> -->
+          <!-- <div class="collapse-title"><s-v-g-icon style="width: 1em; height: 1em" name="Notification" /><span -->
+              <!-- style="margin-left: 6px">执行监听</span></div> -->
+        <!-- </template> -->
         <div style="width: 100%; height: 100%; position: relative; ">
           <ExecutionListener />
           <div id="execution-listener-panel"></div>
         </div>
 
       </el-collapse-item>
-      <el-collapse-item name="flow-condition" v-show="showConditionSeqFlow">
-        <template #title>
-          <div class="collapse-title">
-            <s-v-g-icon style="width: 1em; height: 1em" name="Branch" />
-            <span style="margin-left: 6px">流转条件</span>
-          </div>
-        </template>
+      <el-collapse-item name="flow-condition" title="流转条件" v-show="showConditionSeqFlow">
+        <!-- <template #title> -->
+          <!-- <div class="collapse-title"> -->
+            <!-- <s-v-g-icon style="width: 1em; height: 1em" name="Branch" /> -->
+            <!-- <span style="margin-left: 6px">流转条件</span> -->
+          <!-- </div> -->
+        <!-- </template> -->
         <SeqFlowConfig />
       </el-collapse-item>
-      <el-collapse-item name="owner" v-show="['bpmn:UserTask'].includes(bpmnSelectedElem?.type)">
-        <template #title>
-          <div class="collapse-title">
-            <s-v-g-icon style="width: 1em; height: 1em" name="User" /><span style="margin-left: 6px">审核者</span>
-          </div>
-        </template>
-        <approver-config />
+      <el-collapse-item name="owner" title="审核者" v-show="['bpmn:UserTask'].includes(bpmnSelectedElem?.type || '')">
+        <!-- <template #title> -->
+          <!-- <div class="collapse-title"> -->
+            <!-- <s-v-g-icon style="width: 1em; height: 1em" name="User" /><span style="margin-left: 6px">审核者</span> -->
+          <!-- </div> -->
+        <!-- </template> -->
+        <ApproverConfig />
       </el-collapse-item>
-      <el-collapse-item name="page" v-show="showPageConfig">
-        <template #title>
-          <div class="collapse-title">
-            <s-v-g-icon style="width: 1em; height: 1em" name="Page" />
-            <span style="margin-left: 6px">表单绑定</span>
-          </div>
-        </template>
-        <page-config />
+      <el-collapse-item name="page" title="表单绑定" v-show="showPageConfig">
+        <!-- <template #title> -->
+          <!-- <div class="collapse-title"> -->
+            <!-- <s-v-g-icon style="width: 1em; height: 1em" name="Page" /> -->
+            <!-- <span style="margin-left: 6px">表单绑定</span> -->
+          <!-- </div> -->
+        <!-- </template> -->
+        <PageConfig />
       </el-collapse-item>
-      <el-collapse-item name="boundaryEvent" v-show="['bpmn:BoundaryEvent'].includes(bpmnSelectedElem?.type)">
-        <template #title>
-          <div class="collapse-title">
-            <s-v-g-icon style="width: 1em; height: 1em" name="Page" />
-            <span style="margin-left: 6px">边界事件</span>
-          </div>
-        </template>
+      <el-collapse-item name="boundaryEvent" title="边界事件" v-show="['bpmn:BoundaryEvent'].includes(bpmnSelectedElem?.type || '')">
+        <!-- <template #title> -->
+          <!-- <div class="collapse-title"> -->
+            <!-- <s-v-g-icon style="width: 1em; height: 1em" name="Page" /> -->
+            <!-- <span style="margin-left: 6px">边界事件</span> -->
+          <!-- </div> -->
+        <!-- </template> -->
         <boundary-event-config />
       </el-collapse-item>
     </el-collapse>
-    <v-dialog v-model="executionDialogInfo.visible" :title="executionDialogInfo.title" append-to-body draggable
+    <v-dialog v-model="executionDialogInfo.visible" :title="executionDialogInfo.title || ''" append-to-body draggable
       @cancel="executionDialogInfo.visible = false">
       <el-form :model="executionDialogInfo.formData" label-width="120px">
         <el-form-item label="事件类型" prop="event" required style="width: 100%">
@@ -98,14 +99,14 @@
           <el-button :icon="plusIcon" circle @click="addField"></el-button>
         </template>
 
-        <template v-for="item in executionDialogInfo.formData.fields">
-          <el-descriptions-item label="名称" v-text="item.name"></el-descriptions-item>
-          <el-descriptions-item label="类型" v-text="item.type"></el-descriptions-item>
-          <el-descriptions-item label="值" v-text="item.value"></el-descriptions-item>
+        <template v-for="item in executionDialogInfo.formData.fields" :key="item.name">
+          <el-descriptions-item label="名称">{{ item.name }}</el-descriptions-item>
+          <el-descriptions-item label="类型">{{ item.type }}</el-descriptions-item>
+          <el-descriptions-item label="值">{{ item.value }}</el-descriptions-item>
         </template>
       </el-descriptions>
     </v-dialog>
-    <v-dialog v-model="fieldDialogInfo.visible" :title="fieldDialogInfo.title" append-to-body draggable
+    <v-dialog v-model="fieldDialogInfo.visible" :title="fieldDialogInfo.title || ''" append-to-body draggable
       @cancel="fieldDialogInfo.visible = false">
       <el-form :model="fieldDialogInfo.formData" label-width="120px">
         <el-form-item label="字段名称" prop="name" required style="width: 100%">
@@ -135,33 +136,34 @@ import {
   ElSelect, ElOption, ElButton,
   ElInput, ElDescriptions, ElDescriptionsItem,
 } from "element-plus"
-import {computed, onUnmounted, provide, ref, toRaw} from "vue";
+import {computed, nextTick, onUnmounted, provide, ref, toRaw} from "vue";
 import SVGIcon from "@/components/common/SVGIcon.vue";
 import {propertyPanelOpenedKey} from "@/config/app.keys";
-import SeqFlowConfig from "@/components/bpmn/form/SeqFlowConfig.vue";
-import PageConfig from "@/components/bpmn/form/PageConfig.vue";
-import ApproverConfig from "@/components/bpmn/form/ApproverConfig.vue";
-import VDialog from "@/components/dialog/VDialog.vue";
-import {useIcon} from "@/util";
-import emitter, {type BpmnElementChanged} from '@/event/mitt'
-import {useBpmnModeler, useBpmnSelectedElem} from "@/config/app.hooks";
-import BoundaryEventConfig from "@/components/bpmn/form/BoundaryEventConfig.vue";
+import BasicSetting from "@/components/property-panel/components/BasicSetting.vue";
+import SeqFlowConfig from "@/components/property-panel/components/SeqFlowConfig.vue";
+import PageConfig from "@/components/property-panel/components/PageConfig.vue";
+import ApproverConfig from "@/components/property-panel/components/ApproverConfig.vue";
+import VDialog from "@/components/common/VDialog.vue";
+import {useIcon} from "@/utils/util.ts";
+import emitter from '@/event/mitt'
+import {useBpmnSelectedElem} from "@/config/app.hooks";
+import BoundaryEventConfig from "@/components/property-panel/components/BoundaryEventConfig.vue";
 
 const plusIcon = useIcon('Plus')
 
 const expand = ref<string>("base-setting")
-function open(key: string) {
-  if (expand.value === 'page' && key === 'owner') {
-    return
-  }
-  expand.value = key
-}
+// function open(key: string) {
+// if (expand.value === 'page' && key === 'owner') {
+// return
+// }
+// expand.value = key
+// }
 
 provide(propertyPanelOpenedKey, expand)
 
 
 const bpmnSelectedElem = useBpmnSelectedElem()
-const bpmnModeler = useBpmnModeler()
+// const bpmnModeler = useBpmnModeler()
 
 const showConditionSeqFlow = computed<boolean>(() => {
   const selectedElem = toRaw(bpmnSelectedElem.value)
@@ -197,12 +199,12 @@ interface DialogInfo<T> {
 
 interface InjectField {
   name: string
-  type: 'string' | 'expression'
+  type: 'string' | 'expression' | undefined
   value: string
 }
 
 interface ExecutionFormData {
-  event: 'start' | 'end'
+  event: 'start' | 'end' | undefined
   type: 'class' | 'expression' | 'delegateExpression'
   value: string
   fields: InjectField[]
@@ -230,7 +232,7 @@ const executionDialogInfo = ref<DialogInfo<ExecutionFormData>>({
   title: '',
   formData: {
     event: undefined,
-    type: undefined,
+    type: 'class',
     value: '',
     fields: []
   }
@@ -241,22 +243,23 @@ function addField() {
   fieldDialogInfo.value.visible = true
 }
 
-function addExecutionListener() {
-  executionDialogInfo.value.title = '新增执行监听器'
-  executionDialogInfo.value.visible = true
-}
+// function addExecutionListener() {
+// executionDialogInfo.value.title = '新增执行监听器'
+// executionDialogInfo.value.visible = true
+// }
+//
+// function addTaskListener() {
+//
+// }
+//
+// function addGlobalListener() {
+//
+// }
 
-function addTaskListener() {
-
-}
-
-function addGlobalListener() {
-
-}
-
-function handleElementChanged(event: BpmnElementChanged) {
-  showConditionSeqFlow?.effect?.scheduler?.()
-  showPageConfig?.effect?.scheduler?.()
+async function handleElementChanged() {
+  // showConditionSeqFlow?.effect?.scheduler?.()
+  // showPageConfig?.effect?.scheduler?.()
+  await nextTick()
 }
 
 emitter.on('bpmnElementChanged', handleElementChanged)
@@ -286,6 +289,6 @@ onUnmounted(() => emitter.off('bpmnElementChanged', handleElementChanged))
 
 .collapse-title {
   display: flex;
-  align-items: center;
+  /* align-items: center; */
 }
 </style>

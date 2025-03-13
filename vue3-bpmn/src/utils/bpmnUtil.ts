@@ -13,21 +13,33 @@ export default class BpmnUtil {
     this.bpmnModeler = bpmnModeler
   }
 
-  public isMultiInstanceUserTask(element: Element): boolean {
+  public isMultiInstanceUserTask(element: Element|null): boolean {
+    if (!element) {
+      console.log('element is null')
+      return false
+    }
     const bo = unref(element)?.businessObject
     return !!bo?.loopCharacteristics
   }
 
-  public updateProperty(element: Element, properties: Record<string, MYANY>) {
+  public updateProperty(element: Element | null, properties: Record<string, MYANY>) {
+    if (!element) {
+      console.log('element is null')
+      return
+    }
     const modeling = unref(this.bpmnModeler)?.get<Modeling>('modeling')
     modeling?.updateProperties(unref(element), properties)
   }
 
   public updateModelingProperty(
-    element: Element,
+    element: Element | null,
     attrInstance: MYANY,
     properties: Record<string, MYANY>,
   ) {
+    if (!element) {
+      console.log('element is null')
+      return
+    }
     const modeling = this.bpmnModeler.value?.get<Modeling>('modeling')
     modeling?.updateModdleProperties(unref(element), attrInstance, properties)
   }

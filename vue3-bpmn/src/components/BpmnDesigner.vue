@@ -12,32 +12,24 @@
     </div>
     <div style="width: 100%; height: calc(100% - 41px); position: relative">
       <div style="width: 100%; height: 100%" ref="diagramRef"></div>
-      <!-- <div style="position: absolute; top: 0; right: 0; height: 100%"> -->
-        <!-- <Collapsed v-model="propertiesPanelVisible" position="right" style="height: 100%"> -->
-          <!-- <div
-            style="
+      <div style="position: absolute; top: 0; right: 0; height: 100%">
+        <CustomCollapsed v-model="propertiesPanelVisible" position="right" style="height: 100%">
+          <div style="
               box-sizing: border-box;
               width: 600px;
               height: 100%;
               background-color: var(--el-bg-color);
               border-left: 1px solid var(--el-border-color);
-            "
-          > -->
-            <!-- <PropertyPanel /> -->
-          <!-- </div> -->
-        <!-- </Collapsed> -->
-      <!-- </div> -->
+            ">
+            <CustomPropertyPanel />
+          </div>
+        </CustomCollapsed>
+      </div>
     </div>
     <!-- <xml-editor v-model="previewVisible" :code="previewCode" @confirm="handleUpdateXml" /> -->
     <div id="workflow-mask-panel"></div>
-    <el-tooltip
-      v-model:visible="errTooltipVisible"
-      placement="right"
-      :virtual-ref="errEl!"
-      virtual-triggering
-      manual
-      :auto-close="3000"
-    >
+    <el-tooltip v-model:visible="errTooltipVisible" placement="right" :virtual-ref="errEl!" virtual-triggering manual
+      :auto-close="3000">
       <template #content>
         <span style="color: red; font-weight: bold" v-text="errText"></span>
       </template>
@@ -47,8 +39,8 @@
 
 <script lang="ts" setup>
 // import {useVerApi} from "@/service/workflow/ver";
-import { ElMessage, ElTooltip } from 'element-plus/es'
-import { onMounted, provide, ref, shallowRef } from 'vue'
+import {ElMessage, ElTooltip} from 'element-plus/es'
+import {onMounted, provide, ref, shallowRef} from 'vue'
 import BpmnModeler from 'bpmn-js/lib/Modeler'
 import 'bpmn-js/dist/assets/bpmn-js.css'
 import 'bpmn-js/dist/assets/diagram-js.css'
@@ -58,23 +50,24 @@ import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css'
 import 'diagram-js-minimap/assets/diagram-js-minimap.css'
 import MiniMap from 'diagram-js-minimap'
 import flowableDescriptor from '@/assets/flowable/descriptor.json'
-// import Collapsed from '@/components/common/CustomCollapsed.vue'
 // import PropertyPanel from '@/components/bpmn/PropertyPanel.vue'
-import { bpmnModelerKey, bpmnSelectedElemKey } from '@/config/app.keys'
+import {bpmnModelerKey, bpmnSelectedElemKey} from '@/config/app.keys'
 // import {useModelingFieldApi} from "@/service/modeling/field";
 // import XmlEditor from "@/components/common/XmlEditor.vue";
 // import {useModelingPageApi} from "@/service/modeling/page";
 import ElementRegistry from 'diagram-js/lib/core/ElementRegistry'
-import { validate } from './bpmnlint'
+import {validate} from './bpmnlint'
 import Canvas from 'diagram-js/lib/core/Canvas'
-import type { Shape } from 'bpmn-js/lib/model/Types'
+import type {Shape} from 'bpmn-js/lib/model/Types'
 import {xmlStr} from '@/mock/xmlStr'
-import { useRoute } from 'vue-router'
+import {useRoute} from 'vue-router'
 import GridLineModule from 'diagram-js-grid-bg'
 import MyCustomContextPadProvider from '@/components/context-pad'
-import { useIcon } from '@/utils/util'
+import {useIcon} from '@/utils/util'
 import emitter from '@/event/mitt'
-import { View, FolderOpened, Check, RefreshLeft } from "@element-plus/icons-vue";
+import {View, FolderOpened, Check, RefreshLeft} from "@element-plus/icons-vue";
+import CustomPropertyPanel from './property-panel/CustomPropertyPanel.vue'
+import CustomCollapsed from './common/CustomCollapsed.vue'
 const route = useRoute()
 console.log('route', route, route.name)
 // const router = useRouter()
@@ -86,7 +79,7 @@ const SaveIcon = useIcon('Save')
 // }
 
 // const props = defineProps<Props>()
-// const propertiesPanelVisible = ref(false)
+const propertiesPanelVisible = ref(true)
 const loading = ref(false)
 // const {workflowVer, findVer, updateXml} = useVerApi(loading)
 // const {modelingFields, findModelingFields} = useModelingFieldApi(loading)
@@ -166,11 +159,11 @@ async function importXML(xml: string) {
       bpmnSelectedElem.value = selectionArray?.length
         ? selectionArray[0]
         : registry.find((it) => it.type === 'bpmn:Process')
-      emitter.emit('bpmnSelectionChanged', { element: bpmnSelectedElem.value })
+      emitter.emit('bpmnSelectionChanged', {element: bpmnSelectedElem.value})
     })
     bpmnModeler.value.on<ElementChangedEvent>('element.changed', (e) => {
       console.log('element change', e)
-      emitter.emit('bpmnElementChanged', { element: e.element })
+      emitter.emit('bpmnElementChanged', {element: e.element})
     })
   } catch (e) {
     console.error(e)
@@ -186,7 +179,7 @@ async function handlePreviewXml() {
     return
   }
   loading.value = true
-  const { xml } = await bpmnModeler.value.saveXML({ format: true })
+  const {xml} = await bpmnModeler.value.saveXML({format: true})
   // console.log("export xml", xml)
   previewCode.value = xml!
   previewVisible.value = true

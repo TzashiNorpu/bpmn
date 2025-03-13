@@ -25,7 +25,7 @@ import type {MYANY} from '@/types/type';
 
 
 interface Props {
-  listener: TaskListenerObject
+  listener: ListenerObject
 }
 
 const props = defineProps<Props>()
@@ -44,37 +44,6 @@ const fieldTypeOptions = [
 const themeStore = useThemeStore()
 const gridApi = shallowRef<GridApi<ListenerField>>()
 // const columnApi = shallowRef<ColumnApi>()
-/**
- * ListenerField 的 GridOptions 配置。
- *
- * @type {GridOptions<ListenerField>}
- * @property {Array} rowData - 表格的初始行数据。
- * @property {number} rowHeight - 每行的高度（像素）。
- * @property {number} headerHeight - 表头行的高度（像素）。
- * @property {string} editType - 编辑类型，'fullRow' 允许编辑整行。
- * @property {Array} columnDefs - 表格列的定义。
- * @property {Object} columnDefs[].headerName - 列的表头名称。
- * @property {number} columnDefs[].width - 列的宽度（像素）。
- * @property {Function} columnDefs[].valueGetter - 获取列值的函数。
- * @property {boolean} columnDefs[].resizable - 列是否可调整大小。
- * @property {boolean} columnDefs[].editable - 列是否可编辑。
- * @property {Function} columnDefs[].cellEditor - 自定义单元格编辑器组件。
- * @property {Object} columnDefs[].cellEditorParams - 单元格编辑器的参数。
- * @property {Array} columnDefs[].cellEditorParams.options - 选择编辑器的选项。
- * @property {Object} columnDefs[].cellEditorParams.componentProps - 单元格编辑器组件的属性。
- * @property {Object} columnDefs[].cellEditorParams.componentProps.style - 单元格编辑器组件的样式。
- * @property {Function} columnDefs[].cellRenderer - 自定义单元格渲染器组件。
- * @property {boolean} columnDefs[].wrapHeaderText - 是否换行表头文本。
- * @property {string} columnDefs[].headerClass - 表头单元格的 CSS 类。
- * @property {string} columnDefs[].cellClass - 单元格的 CSS 类。
- * @property {Function} columnDefs[].headerComponent - 自定义表头组件。
- * @property {Object} columnDefs[].headerComponentParams - 表头组件的参数。
- * @property {Array} columnDefs[].headerComponentParams.actions - 表头组件的操作。
- * @property {string} columnDefs[].headerComponentParams.actions[].id - 操作的 ID。
- * @property {Object} columnDefs[].headerComponentParams.actions[].props - 操作的属性。
- * @property {boolean} columnDefs[].headerComponentParams.actions[].props.link - 操作是否为链接。
- * @property {string} columnDefs[].headerComponentParams.actions[].props.type - 操作的类型。
- */
 const gridOptions: GridOptions<ListenerField> = {
   rowData: [],
   rowHeight: 36,

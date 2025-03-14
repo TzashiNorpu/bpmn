@@ -2,17 +2,9 @@
   <el-scrollbar always>
     <el-collapse v-model="expand">
       <el-collapse-item name="base-setting" title="基本设置">
-        <!-- <template #title> -->
-          <!-- <div class="collapse-title"><s-v-g-icon style="width: 1em; height: 1em" name="Setting" /><span -->
-              <!-- style="margin-left: 6px">基本设置</span></div> -->
-        <!-- </template> -->
         <BasicSetting></BasicSetting>
       </el-collapse-item>
       <el-collapse-item name="task-listener" title="任务监听" v-show="bpmnSelectedElem?.type?.endsWith('UserTask')">
-        <!-- <template #title> -->
-          <!-- <div class="collapse-title"><s-v-g-icon style="width: 1em; height: 1em" name="TaskListening" /><span -->
-              <!-- style="margin-left: 6px">任务监听</span></div> -->
-        <!-- </template> -->
         <div style="width: 100%; height: 100%; position: relative; ">
           <TaskListener />
           <div id="task-listener-panel"></div>
@@ -140,6 +132,8 @@ import {computed, nextTick, onUnmounted, provide, ref, toRaw} from "vue";
 import SVGIcon from "@/components/common/SVGIcon.vue";
 import {propertyPanelOpenedKey} from "@/config/app.keys";
 import BasicSetting from "@/components/property-panel/components/BasicSetting.vue";
+import TaskListener from "@/components/property-panel/components/TaskListener.vue";
+import ExecutionListener from "./components/ExecutionListener.vue";
 import SeqFlowConfig from "@/components/property-panel/components/SeqFlowConfig.vue";
 import PageConfig from "@/components/property-panel/components/PageConfig.vue";
 import ApproverConfig from "@/components/property-panel/components/ApproverConfig.vue";

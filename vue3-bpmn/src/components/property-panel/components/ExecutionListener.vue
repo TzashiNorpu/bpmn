@@ -1,19 +1,14 @@
 <template>
   <div style="width: 100%; " v-loading="loading">
-    <el-table height="400px" stripe scrollbar-always-on :data="tableData">
-      <!-- prop -> tableData.event -->
-      <el-table-column prop="event" label="事件" width="80" show-overflow-tooltip></el-table-column>
+    <el-table height="400px" border-width="2" stripe scrollbar-always-on :data="tableData">
+      <el-table-column v-if="bpmnSelectedElem?.type !== 'bpmn:SequenceFlow'" prop="event" label="事件" width="80"
+        show-overflow-tooltip></el-table-column>
       <el-table-column prop="type" label="类型" width="100" show-overflow-tooltip></el-table-column>
       <el-table-column prop="value" label="值" show-overflow-tooltip></el-table-column>
       <el-table-column fixed="right" width="120">
-        <!-- https://element-plus.org/zh-CN/component/table.html#table-column-%E6%8F%92%E6%A7%BD -->
-        <!-- 将 el-button 传给 el-table-column 的 header 插槽 -->
         <template #header>
-          <el-button type="primary" size="small" @click="handleAddListener" :icon="Plus" />
+          <el-button link text type="danger" @click="handleAddListener" :icon="Plus" />
         </template>
-        <!-- scope 是用于接收子组件默认插槽位置返回的数据对象 -->
-        <!-- el-button el-divider el-button 是传递给 el-table-column 的 default 插槽的内容 -->
-        <!-- default 插槽的返回：https://element-plus.org/zh-CN/component/table.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%88%97%E6%A8%A1%E6%9D%BF -->
         <template #default="scope">
           <el-button link @click="handleEditListener(scope.row)">编辑</el-button>
           <el-divider direction="vertical" />
@@ -21,40 +16,36 @@
         </template>
       </el-table-column>
     </el-table>
-    <MaskWindow v-model="editPanelVisible" teleport-to="#task-listener-panel" show-toolbar @cancel="handleCancel"
+    <MaskWindow v-model="editPanelVisible" teleport-to="#execution-listener-panel" show-toolbar @cancel="handleCancel"
       @confirm="handleConfirm">
-      <TaskListenerCreate ref="formRef" :listener="listenerObject!" />
+      <ExecutionListenerForm ref="formRef" :listener="listenerObject!" />
     </MaskWindow>
-    <el-dialog v-model="editPanelVisible" :modal="false">
-      <TaskListenerCreate ref="formRef" :listener="listenerObject!" @update:type="handleTypeChange" @update:value="handleValueChange" @update:event="handleEventChange"/>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="handleCancel">Cancel</el-button>
-          <el-button type="primary" @click="handleConfirm">Confirm</el-button>
-        </div>
-      </template>
-    </el-dialog>
   </div>
+
 </template>
 
 <script lang="ts" setup>
-import {computed, onUnmounted, toRaw, ref, shallowRef, onMounted} from "vue"
+import {computed, onUnmounted, toRaw, ref, shallowRef} from "vue"
 import {ElTable, ElTableColumn, ElDivider, ElButton, ElMessage} from "element-plus"
 import emitter from '@/event/mitt'
-import TaskListenerCreate from '@/components/property-panel/components/TaskListenerCreate.vue'
-import MaskWindow from "@/components/common/MaskWindow.vue"
+// import MaskWindow from "@/components/dialog/MaskWindow.vue";
+import ExecutionListenerForm from "@/components/property-panel/components/ExecutionListenerForm.vue";
+import MaskWindow from "@/components/common/MaskWindow.vue";
+import BpmnUtil from "@/utils/bpmnUtil";
 import {Plus} from '@element-plus/icons-vue'
 import {useBpmnModeler, useBpmnSelectedElem} from "@/config/app.hooks";
-import BpmnUtil from "@/utils/bpmnUtil";
-import type {ListenerFieldInjectError} from "@/types"
-const bpmnModeler = useBpmnModeler()
+import type {MYANY} from "@/types/type";
+
+
 const bpmnSelectedElem = useBpmnSelectedElem()
+const bpmnModeler = useBpmnModeler()
 
 const loading = ref(false)
-const formRef = ref<InstanceType<typeof TaskListenerCreate>>()
+const formRef = ref<InstanceType<typeof ExecutionListenerForm>>()
 
 const tableKey = ref(1)
-const tableData = computed<TaskListenerObject[]>(() => {
+const tableData = computed<ExecutionListenerObject[]>(() => {
+  // const depKey = tableKey.value
   const selectedElem = toRaw(bpmnSelectedElem.value)
   if (!selectedElem) {
     return []
@@ -67,19 +58,18 @@ const tableData = computed<TaskListenerObject[]>(() => {
   if (!listeners || listeners.length === 0) {
     return []
   }
-  const data: TaskListenerObject[] = []
+  const data: ExecutionListenerObject[] = []
   if (listeners && listeners.length > 0) {
     for (const listener of listeners) {
-      if (!listener.$type.endsWith("TaskListener")) {
+      if (!listener.$type.endsWith("ExecutionListener")) {
         continue
       }
-      let type: ListenerValueType | undefined = undefined;
+      let type: ListenerValueType | null = null;
       let val = null;
       if (listener.class) {
         type = "class"
         val = listener.class
-      }
-      else if (listener.expression) {
+      } else if (listener.expression) {
         type = "expression"
         val = listener.expression
       } else if (listener.delegateExpression) {
@@ -91,7 +81,7 @@ const tableData = computed<TaskListenerObject[]>(() => {
       const fields: ListenerField[] = []
       if (listener.fields?.length) {
         for (const field of listener.fields) {
-          let fieldType: ExecutionListenerFieldType | undefined = undefined
+          let fieldType: ExecutionListenerFieldType | null = null
           let fieldVal = null
           if (field.string) {
             fieldType = 'string'
@@ -117,14 +107,14 @@ const tableData = computed<TaskListenerObject[]>(() => {
       })
     }
   }
-  console.log('task listeners', data)
+  console.log('execution listeners', data)
   return data
 })
 
-const originalListenerObject = shallowRef<TaskListenerObject>()
-const listenerObject = ref<TaskListenerObject>()
+const originalListenerObject = shallowRef<ExecutionListenerObject>()
+const listenerObject = ref<ExecutionListenerObject>()
 const editPanelVisible = ref(false)
-function handleEditListener(listener: TaskListenerObject) {
+function handleEditListener(listener: ExecutionListenerObject) {
   listenerObject.value = listener
   originalListenerObject.value = JSON.parse(JSON.stringify(toRaw(listener)))
   editPanelVisible.value = true
@@ -132,7 +122,7 @@ function handleEditListener(listener: TaskListenerObject) {
 
 function handleAddListener() {
   listenerObject.value = {
-    event: 'create',
+    event: 'start',
     type: 'class',
     value: '',
   }
@@ -145,18 +135,18 @@ async function handleConfirm() {
   loading.value = true
   try {
     await formRef.value?.validate()
-  } catch (e: unknown) {
-    console.log('error',e)
-      const errors = (e as {value:ListenerFieldInjectError[]}).value;
-      const message = errors.map((it, idx) =>
-        `<div style="margin-bottom: ${idx === errors.length - 1 ? '0' : '4'}px">${it.message}</div>`
-      ).join('');
-      ElMessage.error({
-        dangerouslyUseHTMLString: true,
-        duration: 6000,
-        message,
-      });
-  } finally {
+  }
+  catch (e) {
+    // const message = e.value?.map((it, idx) => `<div style="margin-bottom: ${idx === e.value.length - 1 ? '0' : '4'}px">${it.message}</div>`).join('')
+    ElMessage.error({
+      dangerouslyUseHTMLString: true,
+      duration: 6000,
+      // message,
+    })
+    console.error(e)
+    return
+  }
+  finally {
     loading.value = false
   }
 
@@ -164,10 +154,12 @@ async function handleConfirm() {
     return
   }
 
+
   const type = listenerObject.value.type
   if (type !== 'class') {
     listenerObject.value.fields = []
-  } else {
+  }
+  else {
     const names = new Set(listenerObject.value.fields?.map(it => it.name) || [])
     if (listenerObject.value.fields && names.size !== listenerObject.value.fields.length) {
       ElMessage.error('字段名不允许重复')
@@ -190,21 +182,20 @@ async function handleConfirm() {
     ElMessage.error('禁止使用delegateExpression')
     return
   }
-  if (bpmnSelectedElem.value?.type === 'bpmn:SequenceFlow') {
+  if (bpmnSelectedElem?.value?.type === 'bpmn:SequenceFlow') {
     listenerObject.value.event = undefined
   }
 
   console.log('处理后的监听器结构', listenerObject.value)
 
   console.log('tableData', tableData.value)
-  const bo = bpmnSelectedElem.value?.businessObject
+  const bo = bpmnSelectedElem?.value?.businessObject
   let extensionElements = bo.extensionElements
   if (!extensionElements) {
     extensionElements = bo.$model.create('bpmn:ExtensionElements', {values: []})
   }
   // bo.$model.create('bpmn:Documentation', { text: val })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const values: Array<any> = extensionElements.values
+  const values: Array<MYANY> = extensionElements.values
 
 
   let fields = undefined
@@ -219,31 +210,34 @@ async function handleConfirm() {
     }
   }
 
-  const executionListener = bo.$model.create('flowable:TaskListener', {
+  const executionListener = bo.$model.create('flowable:ExecutionListener', {
     event: listenerObject.value.event,
     [listenerObject.value.type]: listenerObject.value.value,
     fields,
   })
 
   if (originalListenerObject.value) {
-    const originalObj = originalListenerObject.value
-    const index = values.findIndex(it => it.$type === 'flowable:TaskListener' && it.event === originalObj.event && it[originalObj.type] === originalObj.value)
+    const listenerObj = originalListenerObject.value
+    const index = values.findIndex(it => it.$type === 'flowable:ExecutionListener' && it.event === listenerObj.event && it[listenerObj.type] === listenerObj.value)
     if (index === -1) {
       throw new Error("找不到源监听器对象")
     }
     values[index] = executionListener
   } else {
     values.push(executionListener)
-    if (bpmnSelectedElem.value)
+    if (bpmnSelectedElem.value) {
       bpmnUtil.updateProperty(bpmnSelectedElem.value, {
         extensionElements
       })
+    }
   }
-
-
-
-  if (bpmnSelectedElem.value)
-    bpmnUtil.updateModelingProperty(bpmnSelectedElem.value, extensionElements, {values})
+  if (bpmnSelectedElem.value) {
+    bpmnUtil.updateProperty(bpmnSelectedElem.value, {
+      extensionElements
+    })
+  }
+  // bpmnUtil.updateModelingProperty(bpmnSelectedElem, extensionElements, {values})
+  tableKey.value++
 
   editPanelVisible.value = false
 }
@@ -253,18 +247,7 @@ function handleCancel() {
   editPanelVisible.value = false
 }
 
-const handleTypeChange = (val: string) => {
-  listenerObject.value!.type = val as ListenerValueType
-}
-
-const handleValueChange = (val: string) => {
-  listenerObject.value!.value = val
-}
-
-const handleEventChange = (val: string) => {
-  listenerObject.value!.event = val as TaskListenerEvent
-}
-function handleDeleteListener(listener: TaskListenerObject) {
+function handleDeleteListener(listener: ExecutionListenerObject) {
   const selectedElem = toRaw(bpmnSelectedElem.value)
   if (!selectedElem) {
     return
@@ -272,14 +255,13 @@ function handleDeleteListener(listener: TaskListenerObject) {
 
   const bo = selectedElem.businessObject
   const extensionElements = bo.extensionElements
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const listeners: any[] = extensionElements?.get("values")
+  const listeners: MYANY[] = extensionElements?.get("values")
 
   if (!listeners || listeners.length === 0) {
     return
   }
 
-  const idx = listeners.filter(it => it.$type.endsWith('TaskListener')).findIndex(it => it.event === listener.event && it[listener.type] === listener.value)
+  const idx = listeners.filter(it => it.$type.endsWith('ExecutionListener')).findIndex(it => it.event === listener.event && it[listener.type] === listener.value)
   if (idx !== -1) {
     listeners.splice(idx, 1)
     tableKey.value++
@@ -302,16 +284,6 @@ onUnmounted(() => emitter.off('bpmnElementChanged', handleElementChanged))
 emitter.on('bpmnSelectionChanged', handleSelectionChanged)
 onUnmounted(() => emitter.off('bpmnSelectionChanged', handleSelectionChanged))
 
-onMounted(() => {
-  emitter.on('listenerFieldAdd', (payload: {row: ListenerField}) => {listenerObject.value?.fields?.push(payload.row)})
-})
-onUnmounted(() => emitter.off('listenerFieldAdd'))
-
-onMounted(() => {
-  emitter.on('listenerFieldDelete', (payload: {idx: number}) => {
-    listenerObject.value?.fields?.splice(payload.idx, 1)
-  })
-})
 </script>
 
 <style scoped>

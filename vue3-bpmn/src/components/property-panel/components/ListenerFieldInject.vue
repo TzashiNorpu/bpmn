@@ -9,6 +9,17 @@ import {AgGridVue} from "ag-grid-vue3";
 // import type {AgGridVue} from "ag-grid-vue3";
 import {useThemeStore} from "@/store/theme";
 import {
+  CellStyleModule,
+  CheckboxEditorModule,
+  ClientSideRowModelModule,
+  CustomEditorModule,
+  DateEditorModule,
+  LargeTextEditorModule,
+  ModuleRegistry,
+  NumberEditorModule,
+  SelectEditorModule,
+  TextEditorModule,
+  ValidationModule,
   // type ColumnApi,
   type FirstDataRenderedEvent,
   type GridApi,
@@ -21,8 +32,9 @@ import SelectEditor from "@/components/ag-grid/editor/SelectEditor.vue";
 import InputEditor from "@/components/ag-grid/editor/InputEditor.vue";
 import {AG_EDITOR_SELECT} from "@/components/ag-grid/editor";
 import emitter from '@/event/mitt'
-import type {MYANY} from '@/types/type';
+import type {ListenerFieldInjectError} from '@/types';
 
+ModuleRegistry.registerModules([ClientSideRowModelModule,ValidationModule,TextEditorModule, NumberEditorModule, DateEditorModule, CheckboxEditorModule, LargeTextEditorModule,CellStyleModule , SelectEditorModule,  CustomEditorModule])
 
 interface Props {
   listener: ListenerObject
@@ -188,7 +200,6 @@ const gridOptions: GridOptions<ListenerField> = {
 
     // 绑定点击事件到网格
     bindClickEvent()
-
     // 设置网格的行数据，如果没有提供则使用空数组
     // event.api.setRowData(props.listener.fields || [])
   },
@@ -201,7 +212,7 @@ async function validate() {
   if (!gridApi.value) {
     return
   }
-  const errorList: Array<{field: string, fieldValue: MYANY, message: string}> = []
+  const errorList: Array<ListenerFieldInjectError> = []
 
   gridApi.value.forEachNode((rowNode: IRowNode<ListenerField>, index: number) => {
     if (!rowNode.data) {
@@ -226,7 +237,7 @@ async function validate() {
     }
   })
   if (errorList?.length) {
-    throw {value: errorList}
+    throw {value:errorList}
   }
 }
 

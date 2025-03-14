@@ -13,3 +13,4 @@ export const modelingFieldKey = Symbol("processModelFieldKey") as InjectionKey<S
 
 export const modelingPageKey = Symbol("modelingPageKey") as InjectionKey<ShallowRef<ModelingPageView[]>>
 export const workflowVerKey = Symbol("workflowVerKey") as InjectionKey<Ref<WorkflowTypeVerView | undefined>>
+export const permissionKey = Symbol("permission") as InjectionKey<Ref<Set<string>>>

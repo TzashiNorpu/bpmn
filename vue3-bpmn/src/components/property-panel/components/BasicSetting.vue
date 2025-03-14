@@ -16,7 +16,7 @@
 </template>
 
 <script lang="ts" setup>
-import {computed, ref} from "vue";
+import {computed, ref, watch} from "vue";
 import {ElInput, ElForm, ElFormItem} from "element-plus"
 import BpmnUtil from "@/utils/bpmnUtil"
 import {useBpmnModeler, useBpmnSelectedElem} from "@/config/app.hooks";
@@ -42,50 +42,34 @@ const elementId = computed(() => {
   return bpmnSelectedElem.value?.id || ''
 })
 
-const elementNameKey = ref(1)
-const elementName = computed({
-  get() {
-    // const depKey = elementNameKey.value
-    if (!bpmnSelectedElem.value) {
-      return ''
-    }
-    return bpmnSelectedElem.value.businessObject?.name || ''
-  },
-  set(v) {
-    elementNameKey.value++
-    if (!bpmnSelectedElem.value) {
-      return
-    }
-    bpmnUtil.updateProperty(bpmnSelectedElem.value, {
-      name: v
-    })
+const elementName = ref('')
+const elementDescription = ref('')
+watch(elementName, (v) => {
+  if (!bpmnSelectedElem.value) {
+    return
+  }
+  bpmnUtil.updateProperty(bpmnSelectedElem.value, {
+    name: v
+  })
+})
+watch(elementDescription, (v) => {
+  if (!bpmnSelectedElem.value) {
+    return
+  }
+  const bo = bpmnSelectedElem.value?.businessObject
+  const docs = bo.get("documentation")
+  if (!docs || docs.length === 0) {
+    const comment = bo.$model.create('bpmn:Documentation', {text: v});
+    docs.push(comment)
+  } else {
+    docs[0].text = v
   }
 })
-
-const elementDescriptionKey = ref(1)
-const elementDescription = computed({
-  get() {
-    // const depKey = elementDescriptionKey.value
-    if (!bpmnSelectedElem.value) {
-      return ''
-    }
-    const bo = bpmnSelectedElem.value.businessObject
-    const docs = bo.get("documentation")
-    return docs?.[0]?.text || ''
-  },
-  set(v) {
-    elementDescriptionKey.value++
-    const bo = bpmnSelectedElem.value?.businessObject
-    const docs = bo.get("documentation")
-    console.log("docs", docs)
-    if (!docs || docs.length === 0) {
-      const comment = bo.$model.create('bpmn:Documentation', {text: v});
-      docs.push(comment)
-    } else {
-      docs[0].text = v
-    }
-    // elementDescription?.effect?.scheduler?.()
-  }
+watch(bpmnSelectedElem, selectedEle => {
+  const bo = selectedEle?.businessObject
+  elementName.value = bo?.name || ''
+  const docs = bo?.get("documentation")
+  elementDescription.value = docs?.[0]?.text || ''
 })
 </script>
 

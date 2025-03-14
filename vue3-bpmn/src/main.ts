@@ -12,11 +12,15 @@ import App from './App.vue'
 import router from './router'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+import {permission,ClickOutside} from './directive/index'
+
 
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
 app.use(ElementPlus) // 注册 Element Plus
+app.directive('permission', permission)
+app.directive('click-outside', ClickOutside)
 
 app.mount('#app')

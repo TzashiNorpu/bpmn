@@ -1,6 +1,6 @@
 <template>
   <div style="width: 100%; " v-loading="loading">
-    <el-table height="400px" stripe scrollbar-always-on :data="tableData">
+    <el-table height="400px" stripe scrollbar-always-on :data="taskListenerList">
       <!-- prop -> tableData.event -->
       <el-table-column prop="event" label="事件" width="80" show-overflow-tooltip></el-table-column>
       <el-table-column prop="type" label="类型" width="100" show-overflow-tooltip></el-table-column>
@@ -15,46 +15,44 @@
         <!-- el-button el-divider el-button 是传递给 el-table-column 的 default 插槽的内容 -->
         <!-- default 插槽的返回：https://element-plus.org/zh-CN/component/table.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%88%97%E6%A8%A1%E6%9D%BF -->
         <template #default="scope">
-          <el-button link @click="handleEditListener(scope.row)">编辑</el-button>
+          <el-button type="primary" size="small" :icon="Edit" @click="handleEditListener(scope.row)"></el-button>
           <el-divider direction="vertical" />
-          <el-button link type="danger" @click="handleDeleteListener(scope.row)">删除</el-button>
+          <el-button type="danger" size="small" :icon="Delete" @click="handleDeleteListener(scope.row)"></el-button>
         </template>
       </el-table-column>
     </el-table>
     <MaskWindow v-model="editPanelVisible" teleport-to="#task-listener-panel" show-toolbar @cancel="handleCancel"
       @confirm="handleConfirm">
-      <TaskListenerCreate ref="formRef" :listener="listenerObject!" />
+      <TaskListenerCreate @update-listener:event="handleListenerEventChange"
+        @update-listener:type="handleListenerTypeChange" @update-listener:value="handleListenerValueChange"
+        @listener-fields:add="handleFieldsAdd" ref="formRef" :listener="activeListener!" />
     </MaskWindow>
-    <el-dialog v-model="editPanelVisible" :modal="false">
-      <TaskListenerCreate ref="formRef" :listener="listenerObject!" @update:type="handleTypeChange" @update:value="handleValueChange" @update:event="handleEventChange"/>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="handleCancel">Cancel</el-button>
-          <el-button type="primary" @click="handleConfirm">Confirm</el-button>
-        </div>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script lang="ts" setup>
-import {computed, onUnmounted, toRaw, ref, shallowRef, onMounted} from "vue"
+import {onUnmounted, toRaw, ref, shallowRef, onMounted} from "vue"
 import {ElTable, ElTableColumn, ElDivider, ElButton, ElMessage} from "element-plus"
 import emitter from '@/event/mitt'
 import TaskListenerCreate from '@/components/property-panel/components/TaskListenerCreate.vue'
 import MaskWindow from "@/components/common/MaskWindow.vue"
-import {Plus} from '@element-plus/icons-vue'
+import {Edit, Plus, Delete} from '@element-plus/icons-vue'
 import {useBpmnModeler, useBpmnSelectedElem} from "@/config/app.hooks";
 import BpmnUtil from "@/utils/bpmnUtil";
 import type {ListenerFieldInjectError} from "@/types"
+import type {Element} from "bpmn-js/lib/model/Types"
 const bpmnModeler = useBpmnModeler()
 const bpmnSelectedElem = useBpmnSelectedElem()
+// 用于编辑监听器的对象
+const originalListener = shallowRef<TaskListener>()
+const editPanelVisible = ref(false)
 
+const bpmnUtil = new BpmnUtil(bpmnModeler)
 const loading = ref(false)
 const formRef = ref<InstanceType<typeof TaskListenerCreate>>()
-
-const tableKey = ref(1)
-const tableData = computed<TaskListenerObject[]>(() => {
+const taskListenerList = ref<TaskListener[]>([])
+const activeListener = ref<TaskListener>()
+onMounted(() => {
   const selectedElem = toRaw(bpmnSelectedElem.value)
   if (!selectedElem) {
     return []
@@ -64,18 +62,17 @@ const tableData = computed<TaskListenerObject[]>(() => {
   const extensionElements = bo.extensionElements
   const listeners = extensionElements?.get("values")
 
-  if (!listeners || listeners.length === 0) {
+  if (!listeners.value || listeners.value.length === 0) {
     return []
   }
-  const data: TaskListenerObject[] = []
-  if (listeners && listeners.length > 0) {
-    for (const listener of listeners) {
+  if (listeners.value && listeners.value.length > 0) {
+    for (const listener of listeners.value) {
       if (!listener.$type.endsWith("TaskListener")) {
         continue
       }
       let type: ListenerValueType | undefined = undefined;
       let val = null;
-      if (listener.class) {
+      if (listener.value.class) {
         type = "class"
         val = listener.class
       }
@@ -109,7 +106,7 @@ const tableData = computed<TaskListenerObject[]>(() => {
           })
         }
       }
-      data.push({
+      taskListenerList.value.push({
         event: listener.event,
         type,
         value: val,
@@ -117,69 +114,134 @@ const tableData = computed<TaskListenerObject[]>(() => {
       })
     }
   }
-  console.log('task listeners', data)
-  return data
 })
-
-const originalListenerObject = shallowRef<TaskListenerObject>()
-const listenerObject = ref<TaskListenerObject>()
-const editPanelVisible = ref(false)
-function handleEditListener(listener: TaskListenerObject) {
-  listenerObject.value = listener
-  originalListenerObject.value = JSON.parse(JSON.stringify(toRaw(listener)))
+function handleEditListener(listener: TaskListener) {
+  activeListener.value = listener
+  originalListener.value = JSON.parse(JSON.stringify(toRaw(listener)))
   editPanelVisible.value = true
 }
 
 function handleAddListener() {
-  listenerObject.value = {
+  activeListener.value = {
     event: 'create',
     type: 'class',
     value: '',
   }
-  originalListenerObject.value = undefined
+  originalListener.value = undefined
   editPanelVisible.value = true
 }
+// function deleteFieldsFromActiveListener(fields: ListenerField[]) {
+//   if (!activeListener.value)
+//     return
+//   const bo = bpmnSelectedElem.value?.businessObject;
+//   for (const field of fields) {
+//     bo.$model.remove(field)
+//     activeListener.value.fields = activeListener.value.fields?.filter(it => it.name === field.name && it.value === field.value && it.type === field.type)
+//   }
+// }
+function updateFieldsToActiveListener(fields: ListenerField[]) {
+  if (!activeListener.value)
+    return
+  if (!activeListener.value?.fields) {
+    activeListener.value.fields = []
+  }
+  const bo = bpmnSelectedElem.value?.businessObject;
+  fields.filter(it => !activeListener.value?.fields?.some(field => field.name === it.name && field.value === it.value && field.type === it.type))
+  console.log('new or modify fields', fields)
+  for (const field of fields) {
+    // description.json 里的 Field 类型有 name、expression、stringValue、string 和htmlVar 几种属性
+    // FieldInject 面板的类型里限制了只有 string 和 expression 两种
+    // 再把 FieldInject 面板的 字段名 和 值 存储到 Field 里
+    const bpmnField = bo.$model.create('flowable:Field', {
+      name: field.name,
+      [field.type]: field.value
+    })
 
-const bpmnUtil = new BpmnUtil(bpmnModeler)
+    activeListener.value.fields.push(bpmnField)
+  }
+}
+function addActiveListenerToExtensionElementsOfSelectedElement() {
+  if (!activeListener.value) {
+    return
+  }
+  const bo = bpmnSelectedElem.value?.businessObject
+  let extensionElements = bo.extensionElements
+  if (!extensionElements) {
+    extensionElements = bo.$model.create('bpmn:ExtensionElements', {values: []})
+  }
+  // bo.$model.create('bpmn:Documentation', { text: val })
+  // bpmn.json 里 ExtensionElements 的 values 是一个 Element 数组
+  const valuesOfExtensionElements: Array<Element> = extensionElements.values
+
+  // 组合 TaskListener 对象
+  const taskListener = bo.$model.create('flowable:TaskListener', {
+    event: activeListener.value.event,
+    [activeListener.value.type]: activeListener.value.value,
+    fields: activeListener.value.fields
+  })
+
+  if (originalListener.value) {
+    const originalObj = originalListener.value
+    const index = valuesOfExtensionElements.findIndex(it => it.$type === 'flowable:TaskListener' && it.event === originalObj.event && it[originalObj.type] === originalObj.value)
+    if (index === -1) {
+      throw new Error("找不到源监听器对象")
+    }
+    valuesOfExtensionElements[index] = taskListener
+  } else {
+    valuesOfExtensionElements.push(taskListener)
+    if (bpmnSelectedElem.value)
+      bpmnUtil.updateProperty(bpmnSelectedElem.value, {
+        extensionElements
+      })
+  }
+  if (bpmnSelectedElem.value)
+    bpmnUtil.updateModelingProperty(bpmnSelectedElem.value, extensionElements, {values: valuesOfExtensionElements})
+}
 async function handleConfirm() {
   loading.value = true
   try {
     await formRef.value?.validate()
   } catch (e: unknown) {
-    console.log('error',e)
-      const errors = (e as {value:ListenerFieldInjectError[]}).value;
-      const message = errors.map((it, idx) =>
-        `<div style="margin-bottom: ${idx === errors.length - 1 ? '0' : '4'}px">${it.message}</div>`
-      ).join('');
-      ElMessage.error({
-        dangerouslyUseHTMLString: true,
-        duration: 6000,
-        message,
-      });
+    console.log('error', e)
+    const errors = (e as {value: ListenerFieldInjectError[]}).value;
+    const message = errors.map((it, idx) =>
+      `<div style="margin-bottom: ${idx === errors.length - 1 ? '0' : '4'}px">${it.message}</div>`
+    ).join('');
+    ElMessage.error({
+      dangerouslyUseHTMLString: true,
+      duration: 6000,
+      message,
+    });
   } finally {
     loading.value = false
   }
 
-  if (!listenerObject.value) {
+  if (!activeListener.value) {
     return
   }
 
-  const type = listenerObject.value.type
+  const fields: Array<ListenerField> = [];
+  formRef.value?.gridApi()?.forEachNode((node) => {
+    fields.push({...node.data} as ListenerField)
+  })
+  console.log('fields', fields)
+
+  const type = activeListener.value.type
   if (type !== 'class') {
-    listenerObject.value.fields = []
+    activeListener.value.fields = []
   } else {
-    const names = new Set(listenerObject.value.fields?.map(it => it.name) || [])
-    if (listenerObject.value.fields && names.size !== listenerObject.value.fields.length) {
+    const names = new Set(activeListener.value.fields?.map(it => it.name) || [])
+    if (activeListener.value.fields && names.size !== activeListener.value.fields.length) {
       ElMessage.error('字段名不允许重复')
       return
     }
 
-    if (listenerObject.value.fields?.some(it => !it?.name?.trim())) {
+    if (activeListener.value.fields?.some(it => !it?.name?.trim())) {
       ElMessage.error('请先填写字段名')
       return
     }
 
-    if (listenerObject.value.fields?.some(it => !it?.value?.trim())) {
+    if (activeListener.value.fields?.some(it => !it?.value?.trim())) {
       ElMessage.error('请先填写字段值')
       return
     }
@@ -191,80 +253,87 @@ async function handleConfirm() {
     return
   }
   if (bpmnSelectedElem.value?.type === 'bpmn:SequenceFlow') {
-    listenerObject.value.event = undefined
+    activeListener.value.event = undefined
   }
 
-  console.log('处理后的监听器结构', listenerObject.value)
-
-  console.log('tableData', tableData.value)
-  const bo = bpmnSelectedElem.value?.businessObject
-  let extensionElements = bo.extensionElements
-  if (!extensionElements) {
-    extensionElements = bo.$model.create('bpmn:ExtensionElements', {values: []})
+  console.log('处理后的监听器结构', activeListener.value)
+  // 更新面板
+  taskListenerList.value.push({...activeListener.value} as TaskListener)
+  // 添加 field:
+  if (fields && fields.length) {
+    updateFieldsToActiveListener(fields)
   }
-  // bo.$model.create('bpmn:Documentation', { text: val })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const values: Array<any> = extensionElements.values
+  // 更新 bpmn 模型
+  addActiveListenerToExtensionElementsOfSelectedElement()
+  // const bo = bpmnSelectedElem.value?.businessObject
+  // let extensionElements = bo.extensionElements
+  // if (!extensionElements) {
+  //   extensionElements = bo.$model.create('bpmn:ExtensionElements', {values: []})
+  // }
+  // // bo.$model.create('bpmn:Documentation', { text: val })
+  // // bpmn.json 里 ExtensionElements 的 values 是一个 Element 数组
+  // const extensionElementsValues: Array<Element> = extensionElements.values
 
 
-  let fields = undefined
-  if (listenerObject.value?.fields?.length) {
-    fields = []
-    for (const field of listenerObject.value?.fields) {
-      const bpmnField = bo.$model.create('flowable:Field', {
-        name: field.name,
-        [field.type]: field.value
-      })
-      fields.push(bpmnField)
-    }
-  }
+  // let fields = undefined
+  // if (activeListener.value?.fields?.length) {
+  //   fields = []
+  //   for (const field of activeListener.value?.fields) {
+  //     // description.json 里的 Field 类型有 name、expression、stringValue、string 和htmlVar 几种属性
+  //     // FieldInject 面板的类型里限制了只有 string 和 expression 两种
+  //     // 再把 FieldInject 面板的 字段名 和 值 存储到 Field 里
+  //     const bpmnField = bo.$model.create('flowable:Field', {
+  //       name: field.name,
+  //       [field.type]: field.value
+  //     })
+  //     fields.push(bpmnField)
+  //   }
+  // }
+  // // 组合 TaskListener 对象
+  // const taskListener = bo.$model.create('flowable:TaskListener', {
+  //   event: activeListener.value.event,
+  //   [activeListener.value.type]: activeListener.value.value,
+  //   fields,
+  // })
 
-  const executionListener = bo.$model.create('flowable:TaskListener', {
-    event: listenerObject.value.event,
-    [listenerObject.value.type]: listenerObject.value.value,
-    fields,
-  })
+  // if (originalListener.value) {
+  //   const originalObj = originalListener.value
+  //   const index = extensionElementsValues.findIndex(it => it.$type === 'flowable:TaskListener' && it.event === originalObj.event && it[originalObj.type] === originalObj.value)
+  //   if (index === -1) {
+  //     throw new Error("找不到源监听器对象")
+  //   }
+  //   extensionElementsValues[index] = taskListener
+  // } else {
+  //   extensionElementsValues.push(taskListener)
+  //   if (bpmnSelectedElem.value)
+  //     bpmnUtil.updateProperty(bpmnSelectedElem.value, {
+  //       extensionElements
+  //     })
+  // }
 
-  if (originalListenerObject.value) {
-    const originalObj = originalListenerObject.value
-    const index = values.findIndex(it => it.$type === 'flowable:TaskListener' && it.event === originalObj.event && it[originalObj.type] === originalObj.value)
-    if (index === -1) {
-      throw new Error("找不到源监听器对象")
-    }
-    values[index] = executionListener
-  } else {
-    values.push(executionListener)
-    if (bpmnSelectedElem.value)
-      bpmnUtil.updateProperty(bpmnSelectedElem.value, {
-        extensionElements
-      })
-  }
-
-
-
-  if (bpmnSelectedElem.value)
-    bpmnUtil.updateModelingProperty(bpmnSelectedElem.value, extensionElements, {values})
+  // if (bpmnSelectedElem.value)
+  //   bpmnUtil.updateModelingProperty(bpmnSelectedElem.value, extensionElements, {values: extensionElementsValues})
 
   editPanelVisible.value = false
 }
 
 function handleCancel() {
-  tableKey.value++
   editPanelVisible.value = false
 }
 
-const handleTypeChange = (val: string) => {
-  listenerObject.value!.type = val as ListenerValueType
+const handleListenerTypeChange = (val: string) => {
+  activeListener.value!.type = val as ListenerValueType
 }
 
-const handleValueChange = (val: string) => {
-  listenerObject.value!.value = val
+const handleListenerValueChange = (val: string) => {
+  activeListener.value!.value = val
 }
 
-const handleEventChange = (val: string) => {
-  listenerObject.value!.event = val as TaskListenerEvent
+const handleListenerEventChange = (val: string) => {
+  activeListener.value!.event = val as TaskListenerEvent
 }
-function handleDeleteListener(listener: TaskListenerObject) {
+function handleDeleteListener(listener: TaskListener) {
+  console.log('handleDeleteListener', listener)
   const selectedElem = toRaw(bpmnSelectedElem.value)
   if (!selectedElem) {
     return
@@ -272,24 +341,26 @@ function handleDeleteListener(listener: TaskListenerObject) {
 
   const bo = selectedElem.businessObject
   const extensionElements = bo.extensionElements
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const listeners: any[] = extensionElements?.get("values")
+  const listeners: Element[] = extensionElements?.get("values")
 
   if (!listeners || listeners.length === 0) {
     return
   }
 
   const idx = listeners.filter(it => it.$type.endsWith('TaskListener')).findIndex(it => it.event === listener.event && it[listener.type] === listener.value)
-  if (idx !== -1) {
+  if (idx !== -1)
     listeners.splice(idx, 1)
-    tableKey.value++
-  }
-
+  const i = taskListenerList.value.findIndex(it => it.event === listener.event && it.type === listener.type && it.value === listener.value)
+  if (i !== -1)
+    taskListenerList.value.splice(i, 1)
 
 }
 
+function handleFieldsAdd(listenerFields: ListenerField[]) {
+  console.log('handleFieldsAdd', listenerFields)
+  addFieldsToActiveListener(listenerFields)
+}
 function handleElementChanged() {
-  tableKey.value++
 }
 
 function handleSelectionChanged() {
@@ -303,13 +374,13 @@ emitter.on('bpmnSelectionChanged', handleSelectionChanged)
 onUnmounted(() => emitter.off('bpmnSelectionChanged', handleSelectionChanged))
 
 onMounted(() => {
-  emitter.on('listenerFieldAdd', (payload: {row: ListenerField}) => {listenerObject.value?.fields?.push(payload.row)})
+  emitter.on('listenerFieldAdd', (payload: {row: ListenerField}) => {activeListener.value?.fields?.push(payload.row)})
 })
 onUnmounted(() => emitter.off('listenerFieldAdd'))
 
 onMounted(() => {
   emitter.on('listenerFieldDelete', (payload: {idx: number}) => {
-    listenerObject.value?.fields?.splice(payload.idx, 1)
+    activeListener.value?.fields?.splice(payload.idx, 1)
   })
 })
 </script>

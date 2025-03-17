@@ -39,7 +39,7 @@ import {useBpmnSelectedElem} from "@/config/app.hooks";
 import ListenerFieldInject from "@/components/property-panel/components/ListenerFieldInject.vue";
 
 interface Props {
-  listener: ExecutionListenerObject
+  listener: ExecutionListener
 }
 defineProps<Props>()
 

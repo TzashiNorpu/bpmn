@@ -14,13 +14,13 @@ interface ListenerObject {
   value: string
   fields?: ListenerField[]
 }
-declare interface ExecutionListenerObject extends ListenerObject {
+declare interface ExecutionListener extends ListenerObject {
   event: ExecutionListenerEvent
 }
 
 declare type TaskListenerEvent = 'create' | 'assignment' | 'complete' | 'delete'
 
-declare interface TaskListenerObject extends ListenerObject {
+declare interface TaskListener extends ListenerObject {
   event?: TaskListenerEvent
 }
 

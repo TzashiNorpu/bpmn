@@ -1,17 +1,19 @@
 <template>
   <ag-grid-vue ref="gridRef" style="width: 100%; height: 100%" class="ag-grid-wrapper" :class="themeStore.AGGridClass"
-    :grid-options="gridOptions" v-click-outside="handleClickGridOutside" :row-data="props.listener.fields || []" />
+    :grid-options="gridOptions" v-click-outside="handleClickGridOutside" :row-data="data" />
 </template>
 <script lang="ts" setup>
 import {Plus, Delete} from '@element-plus/icons-vue'
-import {shallowRef, onUnmounted, unref} from "vue";
+import {shallowRef, onUnmounted, unref, computed} from "vue";
 import {AgGridVue} from "ag-grid-vue3";
 // import type {AgGridVue} from "ag-grid-vue3";
 import {useThemeStore} from "@/store/theme";
 import {
   CellStyleModule,
   CheckboxEditorModule,
+  ClientSideRowModelApiModule,
   ClientSideRowModelModule,
+  ColumnAutoSizeModule,
   CustomEditorModule,
   DateEditorModule,
   LargeTextEditorModule,
@@ -31,16 +33,41 @@ import GridActionCell from "@/components/ag-grid/cell/GridActionCell.vue";
 import SelectEditor from "@/components/ag-grid/editor/SelectEditor.vue";
 import InputEditor from "@/components/ag-grid/editor/InputEditor.vue";
 import {AG_EDITOR_SELECT} from "@/components/ag-grid/editor";
-import emitter from '@/event/mitt'
 import type {ListenerFieldInjectError} from '@/types';
 
-ModuleRegistry.registerModules([ClientSideRowModelModule,ValidationModule,TextEditorModule, NumberEditorModule, DateEditorModule, CheckboxEditorModule, LargeTextEditorModule,CellStyleModule , SelectEditorModule,  CustomEditorModule])
+ModuleRegistry.registerModules([ClientSideRowModelModule,
+  ColumnAutoSizeModule,
+  ClientSideRowModelApiModule,
+  ValidationModule,
+  TextEditorModule,
+  NumberEditorModule,
+  DateEditorModule,
+  CheckboxEditorModule,
+  LargeTextEditorModule,
+  CellStyleModule,
+  SelectEditorModule,
+  CustomEditorModule])
 
 interface Props {
   listener: ListenerObject
 }
 
 const props = defineProps<Props>()
+const data = computed(() => {
+  const fieldsData: Array<ListenerField> = []
+  const fields = props.listener.fields
+  if (!fields) {
+    return fieldsData
+  }
+  for (const field of fields) {
+    fieldsData.push({
+      name: field.name,
+      type: field.type,
+      value: field.value
+    } as ListenerField)
+  }
+  return fieldsData
+})
 const fieldTypeOptions = [
   {
     label: '字符串',
@@ -50,12 +77,11 @@ const fieldTypeOptions = [
     label: '表达式',
     value: 'expression'
   },
-
 ]
-
 const themeStore = useThemeStore()
 const gridApi = shallowRef<GridApi<ListenerField>>()
 // const columnApi = shallowRef<ColumnApi>()
+// const data = ref(props.listener.fields || [])
 const gridOptions: GridOptions<ListenerField> = {
   rowData: [],
   rowHeight: 36,
@@ -128,10 +154,12 @@ const gridOptions: GridOptions<ListenerField> = {
               link: true,  // 是否作为链接样式
               type: 'danger',  // 按钮类型为危险（红色）
               icon: Plus,  // 使用Plus图标
-              style: 'width: 20px; height: 20px; border: none;',  // 自定义样式
+              style: 'width: 20px; height: 20px;  ',  // 自定义样式
             },
             clickHandler(params: ICellRendererParams<ListenerField>, ev: MouseEvent) {  // 点击事件处理器
               console.log('event:', ev)  // 打印鼠标事件信息
+              console.log('params:', params)
+              console.log('gridApi:', gridApi.value)
               if (!gridApi.value) {  // 如果gridApi不存在，直接返回
                 return
               }
@@ -149,7 +177,8 @@ const gridOptions: GridOptions<ListenerField> = {
               });
 
               // props.listener.fields?.push(newRow)  // 将新行添加到字段列表中
-              emitter.emit('listenerFieldAdd', {row: newRow})  // 发送监听器字段添加事件
+              // emitter.emit('listenerFieldAdd', {row: newRow})  // 发送监听器字段添加事件
+              // emit('field:add', newRow)  // 触发字段添加事件
               const rowCount = params.api.getDisplayedRowCount();  // 获取当前行数
               params.api.startEditingCell({  // 开始编辑新行的第一个单元格
                 rowIndex: rowCount - 1,
@@ -176,11 +205,12 @@ const gridOptions: GridOptions<ListenerField> = {
                 remove: [params.data]
               })
 
-              const idx = props.listener.fields?.indexOf(params.data) || -1  // 查找当前行在字段列表中的索引
+              // const idx = props.listener.fields?.indexOf(params.data) || -1  // 查找当前行在字段列表中的索引
               // idx !== -1 && props.listener.fields?.splice(idx, 1)  // 如果找到，则从字段列表中移除当前行
-              if (idx !== -1) {
-                emitter.emit('listenerFieldDelete', {idx: idx})  // 发送监听器字段删除事件
-              }
+              // if (idx !== -1) {
+              // emit('field:delete', idx)  // 触发字段删除事件
+              // emitter.emit('listenerFieldDelete', {idx: idx})  // 发送监听器字段删除事件
+              // }
             }
           }
         ]
@@ -237,12 +267,13 @@ async function validate() {
     }
   })
   if (errorList?.length) {
-    throw {value:errorList}
+    throw {value: errorList}
   }
 }
 
 defineExpose({
-  validate
+  validate,
+  gridApi
 })
 
 function handleClickGridOutside(up: MouseEvent, down: MouseEvent) {

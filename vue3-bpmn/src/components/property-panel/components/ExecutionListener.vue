@@ -44,7 +44,7 @@ const loading = ref(false)
 const formRef = ref<InstanceType<typeof ExecutionListenerForm>>()
 
 const tableKey = ref(1)
-const tableData = computed<ExecutionListenerObject[]>(() => {
+const tableData = computed<ExecutionListener[]>(() => {
   // const depKey = tableKey.value
   const selectedElem = toRaw(bpmnSelectedElem.value)
   if (!selectedElem) {
@@ -58,7 +58,7 @@ const tableData = computed<ExecutionListenerObject[]>(() => {
   if (!listeners || listeners.length === 0) {
     return []
   }
-  const data: ExecutionListenerObject[] = []
+  const data: ExecutionListener[] = []
   if (listeners && listeners.length > 0) {
     for (const listener of listeners) {
       if (!listener.$type.endsWith("ExecutionListener")) {
@@ -111,10 +111,10 @@ const tableData = computed<ExecutionListenerObject[]>(() => {
   return data
 })
 
-const originalListenerObject = shallowRef<ExecutionListenerObject>()
-const listenerObject = ref<ExecutionListenerObject>()
+const originalListenerObject = shallowRef<ExecutionListener>()
+const listenerObject = ref<ExecutionListener>()
 const editPanelVisible = ref(false)
-function handleEditListener(listener: ExecutionListenerObject) {
+function handleEditListener(listener: ExecutionListener) {
   listenerObject.value = listener
   originalListenerObject.value = JSON.parse(JSON.stringify(toRaw(listener)))
   editPanelVisible.value = true
@@ -247,7 +247,7 @@ function handleCancel() {
   editPanelVisible.value = false
 }
 
-function handleDeleteListener(listener: ExecutionListenerObject) {
+function handleDeleteListener(listener: ExecutionListener) {
   const selectedElem = toRaw(bpmnSelectedElem.value)
   if (!selectedElem) {
     return

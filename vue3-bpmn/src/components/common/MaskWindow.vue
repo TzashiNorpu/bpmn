@@ -1,40 +1,32 @@
 <template>
   <Teleport v-if="visible" :to="toElem">
-    <div
-      class="mask-root-window"
-      :style="rootStyle"
-    >
+    <div class="mask-root-window" :style="rootStyle">
       <template v-if="mode === 'dev'">
         <div class="mask-window-wrapper">
+          <slot></slot>
           <slot v-if="showToolbar" name="toolbar">
-            <div style="box-sizing: border-box; padding: 6px;  background-color: var(--toolbar-bg-color);">
-              <el-button @click="emits('cancel')"  >{{ cancelText }}</el-button>
-              <el-button @click="emits('confirm')" type="primary" plain >{{ confirmText }}</el-button>
+            <div class="toolbar">
+              <el-button @click="emits('cancel')">{{ cancelText }}</el-button>
+              <el-button @click="emits('confirm')" type="primary" plain>{{ confirmText }}</el-button>
             </div>
           </slot>
-          <slot></slot>
         </div>
       </template>
       <template v-else>
         <transition name="fade" mode="out-in" appear>
           <div class="mask-window-wrapper">
+            <slot></slot>
             <slot v-if="showToolbar" name="toolbar">
               <div style="box-sizing: border-box; padding: 6px;  background-color: var(--toolbar-bg-color);">
-                <el-button @click="emits('cancel')"  >{{ cancelText }}</el-button>
-                <el-button @click="emits('confirm')" type="primary" plain >{{ confirmText }}</el-button>
+                <el-button @click="emits('cancel')">{{ cancelText }}</el-button>
+                <el-button @click="emits('confirm')" type="primary" plain>{{ confirmText }}</el-button>
               </div>
             </slot>
-            <slot></slot>
           </div>
         </transition>
       </template>
 
-      <div
-        title="关闭蒙版"
-        class="close-mask"
-        :style="{ 'z-index': 800 + 1 }"
-        @click.stop="visible = false"
-      >
+      <div title="关闭蒙版" class="close-mask" :style="{'z-index': 800 + 1}" @click.stop="visible = false">
         <s-v-g-icon class="close-icon" name="close"></s-v-g-icon>
       </div>
     </div>
@@ -42,9 +34,9 @@
 </template>
 
 <script lang="ts" setup>
-import {computed, onDeactivated } from "vue";
+import {computed, onDeactivated} from "vue";
 import SVGIcon from "@/components/common/SVGIcon.vue";
-import { ElButton } from 'element-plus'
+import {ElButton} from 'element-plus'
 // import { useLayoutStore } from "@/store/layout";
 import type {MYANY} from "@/types/type";
 
@@ -98,16 +90,16 @@ const rootStyle = computed(() => {
 })
 
 
-const toElem = computed<string | HTMLElement>(() => props.teleportTo||'body')
+const toElem = computed<string | HTMLElement>(() => props.teleportTo || 'body')
 
 
 // const toElem = computed<string | HTMLElement>(() => {
-  // const defaultContainer = layoutStore.maskContainerRef!
-  // if (!props.teleportTo) {
-    // return defaultContainer
-  // } else {
-    // return props.teleportTo
-  // }
+// const defaultContainer = layoutStore.maskContainerRef!
+// if (!props.teleportTo) {
+// return defaultContainer
+// } else {
+// return props.teleportTo
+// }
 // })
 //
 const visible = computed({
@@ -146,9 +138,17 @@ onDeactivated(() => {
   position: relative;
   box-sizing: border-box;
   width: 100%;
-  height: 100%;
+  height: 90%;
   padding: var(--el-main-padding);
   background-color: var(--el-bg-color);
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 
 .close-mask {
@@ -163,7 +163,8 @@ onDeactivated(() => {
   border: 1px solid var(--el-border-color);
 }
 
-.close-mask:hover, .close-mask:hover .close-icon {
+.close-mask:hover,
+.close-mask:hover .close-icon {
   background-color: var(--el-bg-color-page);
 }
 
@@ -174,5 +175,4 @@ onDeactivated(() => {
   width: 16px;
   height: 16px;
 }
-
 </style>

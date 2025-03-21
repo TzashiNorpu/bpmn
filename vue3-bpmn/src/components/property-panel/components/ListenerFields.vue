@@ -54,17 +54,18 @@ interface Props {
 
 const props = defineProps<Props>()
 const data = computed(() => {
-  const fieldsData: Array<ListenerField> = []
+  const fieldsData: Array<ListenerFieldConfig> = []
   const fields = props.listener.fields
   if (!fields) {
     return fieldsData
   }
   for (const field of fields) {
+    console.log('field:', field)
     fieldsData.push({
       name: field.name,
-      type: field.type,
-      value: field.value
-    } as ListenerField)
+      type: 'string' in field ? 'string' : 'expression',
+      value: 'string' in field ? field['string'] :('expression' in field ? field['expression'] :'')
+    } as ListenerFieldConfig)
   }
   return fieldsData
 })
@@ -79,10 +80,10 @@ const fieldTypeOptions = [
   },
 ]
 const themeStore = useThemeStore()
-const gridApi = shallowRef<GridApi<ListenerField>>()
+const gridApi = shallowRef<GridApi<ListenerFieldConfig>>()
 // const columnApi = shallowRef<ColumnApi>()
 // const data = ref(props.listener.fields || [])
-const gridOptions: GridOptions<ListenerField> = {
+const gridOptions: GridOptions<ListenerFieldConfig> = {
   rowData: [],
   rowHeight: 36,
   headerHeight: 36,
@@ -156,7 +157,7 @@ const gridOptions: GridOptions<ListenerField> = {
               icon: Plus,  // 使用Plus图标
               style: 'width: 20px; height: 20px;  ',  // 自定义样式
             },
-            clickHandler(params: ICellRendererParams<ListenerField>, ev: MouseEvent) {  // 点击事件处理器
+            clickHandler(params: ICellRendererParams<ListenerFieldConfig>, ev: MouseEvent) {  // 点击事件处理器
               console.log('event:', ev)  // 打印鼠标事件信息
               console.log('params:', params)
               console.log('gridApi:', gridApi.value)
@@ -164,7 +165,7 @@ const gridOptions: GridOptions<ListenerField> = {
                 return
               }
 
-              const newRow: ListenerField = {  // 创建新行数据
+              const newRow: ListenerFieldConfig = {  // 创建新行数据
                 name: '',
                 type: 'string',
                 value: ''
@@ -223,7 +224,7 @@ const gridOptions: GridOptions<ListenerField> = {
  *
  * @param {GridReadyEvent<ListenerField>} event - 网格准备就绪事件，包含网格的API和列API
  */
-  onGridReady(event: GridReadyEvent<ListenerField>) {
+  onGridReady(event: GridReadyEvent<ListenerFieldConfig>) {
     // 将网格API和列API保存到组件的响应式变量中
     gridApi.value = event.api
     // columnApi.value = event.columnApi
@@ -233,7 +234,7 @@ const gridOptions: GridOptions<ListenerField> = {
     // 设置网格的行数据，如果没有提供则使用空数组
     // event.api.setRowData(props.listener.fields || [])
   },
-  onFirstDataRendered(event: FirstDataRenderedEvent<ListenerField>) {
+  onFirstDataRendered(event: FirstDataRenderedEvent<ListenerFieldConfig>) {
     event.api.sizeColumnsToFit()
   },
 }
@@ -244,7 +245,7 @@ async function validate() {
   }
   const errorList: Array<ListenerFieldInjectError> = []
 
-  gridApi.value.forEachNode((rowNode: IRowNode<ListenerField>, index: number) => {
+  gridApi.value.forEachNode((rowNode: IRowNode<ListenerFieldConfig>, index: number) => {
     if (!rowNode.data) {
       return
     }

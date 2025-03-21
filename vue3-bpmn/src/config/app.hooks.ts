@@ -8,3 +8,4 @@ export function useBpmnSelectedElem() {
 export function useBpmnModeler() {
   return inject(bpmnModelerKey)!
 }
+

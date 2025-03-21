@@ -36,7 +36,7 @@ import {
 } from 'element-plus'
 import {ref} from "vue";
 import {useBpmnSelectedElem} from "@/config/app.hooks";
-import ListenerFieldInject from "@/components/property-panel/components/ListenerFieldInject.vue";
+import ListenerFieldInject from "@/components/property-panel/components/ListenerFields.vue";
 
 interface Props {
   listener: ExecutionListener

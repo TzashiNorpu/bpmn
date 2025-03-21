@@ -110,4 +110,44 @@ moddle.fromXML(xmlStr, (err, definitions) => {
 
 https://github.com/bpmn-io/bpmn-moddle/blob/main/resources/bpmn/json/bpmn.json 文件定义了 BPMN 模型的结构和属性，`bpmn-moddle` 库使用这个文件来解析和生成 BPMN XML 文件。通过理解这个文件的结构，你可以更好地使用 `bpmn-moddle` 库来处理 BPMN 模型。
 
-Similar code found with 1 license type
+
+------------------Element----------------
+------------------bpmn-------------------
+BPMN -> Element:
+export type Element = {
+  businessObject: any;
+  di: any;
+  type: string;
+} & BaseElement 【这里的 BaseElement 即 diagramjs 的 Element】
+------------------diagram-----------------
+export type ElementLike = {
+  id: string;
+  businessObject?: any;
+} & Record<string, any>;
+
+export type Element = ElementLike & {
+  label?: Label;
+  labels: Label[];
+  parent?: Element;
+  incoming: Connection[];
+  outgoing: Connection[];
+}
+
+export type ShapeLike = ElementLike & {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+-----------------Modeler------------------
+-----------------bpmn---------------------
+export default class Modeler<ServiceMap = null> extends BaseModeler<ServiceMap> {
+  static Viewer: typeof Viewer;
+  static NavigatedViewer: typeof NavigatedViewer;
+  createDiagram(): Promise<ImportXMLResult>;
+}
+
+export default class BaseModeler<ServiceMap = null> extends BaseViewer<ServiceMap> {}
+export default class BaseViewer<ServiceMap = null> extends Diagram<ServiceMap> 
+----------------diagram------------------
+export default class Diagram<ServiceMap = null> {

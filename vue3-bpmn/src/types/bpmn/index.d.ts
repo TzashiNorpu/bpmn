@@ -2,6 +2,10 @@ declare type ExecutionListenerFieldType = 'string' | 'expression'
 
 declare interface ListenerField {
   name: string
+  ExecutionListenerFieldType: string
+}
+declare interface ListenerFieldConfig {
+  name: string
   type: ExecutionListenerFieldType
   value: string
 }

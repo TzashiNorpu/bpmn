@@ -50,6 +50,11 @@ export default class BpmnUtil {
     return root?.id || ''
   }
 
+  public getElementById(elementId: string): Element | null {
+    const registry = unref(this.bpmnModeler)?.get<ElementRegistry>('elementRegistry')
+    return registry?.get(elementId) as Element || null
+  }
+
   public createElement(elementType: string, properties: Record<string, MYANY>, parent: Element) {
     const bpmnFactory = this.bpmnModeler.value!.get<BpmnFactory>('bpmnFactory')
     const element = bpmnFactory.create(elementType, properties)

@@ -22,7 +22,7 @@ import BpmnUtil from "@/utils/bpmnUtil"
 import {useBpmnModeler, useBpmnSelectedElem} from "@/config/app.hooks";
 
 
-const bpmnSelectedElem = useBpmnSelectedElem()
+const {bpmnSelectedElem,updateBpmnSelectedElem} = useBpmnSelectedElem()
 const bpmnModeler = useBpmnModeler()
 
 const bpmnUtil = new BpmnUtil(bpmnModeler)

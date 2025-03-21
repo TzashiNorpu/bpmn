@@ -20,8 +20,7 @@
         <el-input v-model="value" />
       </el-form-item>
       <div v-if="listener.type === 'class'" style="width: 100%; height: 200px ;margin-top: 10px">
-        <ListenerFieldInject ref="fieldRef" v-bind="$props"
-           />
+        <ListenerFieldInject ref="fieldRef" v-bind="$props" />
       </div>
     </el-form>
   </el-scrollbar>
@@ -31,7 +30,7 @@
 <script lang="ts" setup>
 import {ElScrollbar, ElForm, ElFormItem, ElRadioGroup, ElRadioButton, ElInput} from 'element-plus'
 import {computed, ref} from "vue";
-import ListenerFieldInject from "@/components/property-panel/components/ListenerFieldInject.vue";
+import ListenerFieldInject from "@/components/property-panel/components/ListenerFields.vue";
 interface Props {
   listener: TaskListener
 }
@@ -76,7 +75,7 @@ async function validate() {
 
 defineExpose({
   validate,
-  gridApi:()=>fieldRef.value?.gridApi
+  gridApi: () => fieldRef.value?.gridApi
 })
 
 // https://l1yp.com/docs/flowable/bpmn/#executionListeners

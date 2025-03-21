@@ -1,6 +1,6 @@
 <template>
   <div style="width: 100%; " v-loading="loading">
-    <el-table height="400px" stripe scrollbar-always-on :data="taskListenerList">
+    <el-table height="400px" stripe scrollbar-always-on :data="taskListenerList" @current-change="handleCurrentChange">
       <!-- prop -> tableData.event -->
       <el-table-column prop="event" label="事件" width="80" show-overflow-tooltip></el-table-column>
       <el-table-column prop="type" label="类型" width="100" show-overflow-tooltip></el-table-column>
@@ -31,7 +31,7 @@
 </template>
 
 <script lang="ts" setup>
-import {onUnmounted, toRaw, ref, shallowRef, onMounted} from "vue"
+import {onUnmounted, toRaw, ref, shallowRef, onMounted,  watch} from "vue"
 import {ElTable, ElTableColumn, ElDivider, ElButton, ElMessage} from "element-plus"
 import emitter from '@/event/mitt'
 import TaskListenerCreate from '@/components/property-panel/components/TaskListenerCreate.vue'
@@ -42,7 +42,7 @@ import BpmnUtil from "@/utils/bpmnUtil";
 import type {ListenerFieldInjectError} from "@/types"
 import type {Element} from "bpmn-js/lib/model/Types"
 const bpmnModeler = useBpmnModeler()
-const bpmnSelectedElem = useBpmnSelectedElem()
+const {bpmnSelectedElem,updateBpmnSelectedElem} = useBpmnSelectedElem()
 // 用于编辑监听器的对象
 const originalListener = shallowRef<TaskListener>()
 const editPanelVisible = ref(false)
@@ -52,69 +52,44 @@ const loading = ref(false)
 const formRef = ref<InstanceType<typeof TaskListenerCreate>>()
 const taskListenerList = ref<TaskListener[]>([])
 const activeListener = ref<TaskListener>()
-onMounted(() => {
-  const selectedElem = toRaw(bpmnSelectedElem.value)
-  if (!selectedElem) {
-    return []
-  }
 
-  const bo = selectedElem.businessObject
+watch(() => bpmnSelectedElem.value, (selectedElem) => {
+  console.log('selectedElem', selectedElem)
+  taskListenerList.value = []
+  const bo = selectedElem?.businessObject
   const extensionElements = bo.extensionElements
   const listeners = extensionElements?.get("values")
-
-  if (!listeners.value || listeners.value.length === 0) {
-    return []
-  }
-  if (listeners.value && listeners.value.length > 0) {
+  if (listeners?.value && listeners.value.length > 0) {
     for (const listener of listeners.value) {
-      if (!listener.$type.endsWith("TaskListener")) {
-        continue
-      }
+      if (!listener.$type.endsWith("TaskListener")) continue
       let type: ListenerValueType | undefined = undefined;
-      let val = null;
+      let value = null;
       if (listener.value.class) {
         type = "class"
-        val = listener.class
+        value = listener.class
       }
       else if (listener.expression) {
         type = "expression"
-        val = listener.expression
+        value = listener.expression
       } else if (listener.delegateExpression) {
         type = "delegateExpression"
-        val = listener.delegateExpression
-      } else {
-        continue
-      }
-      const fields: ListenerField[] = []
-      if (listener.fields?.length) {
-        for (const field of listener.fields) {
-          let fieldType: ExecutionListenerFieldType | undefined = undefined
-          let fieldVal = null
-          if (field.string) {
-            fieldType = 'string'
-            fieldVal = field.string
-          } else if (field.expression) {
-            fieldType = 'expression'
-            fieldVal = field.expression
-          } else {
-            continue
-          }
-          fields.push({
-            name: field.name,
-            type: fieldType,
-            value: fieldVal
-          })
-        }
-      }
+        value = listener.delegateExpression
+      } else continue
+
       taskListenerList.value.push({
         event: listener.event,
         type,
-        value: val,
-        fields,
+        value,
+        fields: listener.fields
       })
     }
   }
 })
+
+function handleCurrentChange(val: TaskListener) {
+  console.log('handleCurrentChange', val)
+  activeListener.value = val
+}
 function handleEditListener(listener: TaskListener) {
   activeListener.value = listener
   originalListener.value = JSON.parse(JSON.stringify(toRaw(listener)))
@@ -139,15 +114,16 @@ function handleAddListener() {
 //     activeListener.value.fields = activeListener.value.fields?.filter(it => it.name === field.name && it.value === field.value && it.type === field.type)
 //   }
 // }
-function updateFieldsToActiveListener(fields: ListenerField[]) {
-  if (!activeListener.value)
-    return
-  if (!activeListener.value?.fields) {
-    activeListener.value.fields = []
-  }
+function saveFieldsToActiveListener(fields: ListenerFieldConfig[]) {
+  if (!activeListener.value)    return
+  if(!fields) return
+  console.log('fields', fields)
+  // if (!activeListener.value?.fields) {
+  //   activeListener.value.fields = []
+  // }
   const bo = bpmnSelectedElem.value?.businessObject;
-  fields.filter(it => !activeListener.value?.fields?.some(field => field.name === it.name && field.value === it.value && field.type === it.type))
-  console.log('new or modify fields', fields)
+  // 每次全量新建
+  activeListener.value.fields= []
   for (const field of fields) {
     // description.json 里的 Field 类型有 name、expression、stringValue、string 和htmlVar 几种属性
     // FieldInject 面板的类型里限制了只有 string 和 expression 两种
@@ -156,7 +132,6 @@ function updateFieldsToActiveListener(fields: ListenerField[]) {
       name: field.name,
       [field.type]: field.value
     })
-
     activeListener.value.fields.push(bpmnField)
   }
 }
@@ -194,10 +169,15 @@ function addActiveListenerToExtensionElementsOfSelectedElement() {
         extensionElements
       })
   }
-  if (bpmnSelectedElem.value)
+  if (bpmnSelectedElem.value){
     bpmnUtil.updateModelingProperty(bpmnSelectedElem.value, extensionElements, {values: valuesOfExtensionElements})
+    const element = bpmnUtil.getElementById(bpmnSelectedElem.value.id)
+    updateBpmnSelectedElem(element)
+  }
+
 }
 async function handleConfirm() {
+  console.log('confirm')
   loading.value = true
   try {
     await formRef.value?.validate()
@@ -220,28 +200,32 @@ async function handleConfirm() {
     return
   }
 
-  const fields: Array<ListenerField> = [];
+  // 添加 field:
+  const fields: Array<ListenerFieldConfig> = [];
   formRef.value?.gridApi()?.forEachNode((node) => {
-    fields.push({...node.data} as ListenerField)
+    if (!node.data) {
+      return
+    }
+    if (!fields.includes(node.data as ListenerFieldConfig)) {
+      fields.push(node.data as ListenerFieldConfig)
+    }
   })
-  console.log('fields', fields)
 
   const type = activeListener.value.type
   if (type !== 'class') {
     activeListener.value.fields = []
   } else {
-    const names = new Set(activeListener.value.fields?.map(it => it.name) || [])
-    if (activeListener.value.fields && names.size !== activeListener.value.fields.length) {
+    const names = new Set(fields?.map(it => it.name) || [])
+    if (fields && names.size !== fields.length) {
       ElMessage.error('字段名不允许重复')
       return
     }
 
-    if (activeListener.value.fields?.some(it => !it?.name?.trim())) {
+    if (fields?.some(it => !it?.name?.trim())) {
       ElMessage.error('请先填写字段名')
       return
     }
-
-    if (activeListener.value.fields?.some(it => !it?.value?.trim())) {
+    if (fields?.some(it => !it.value.trim())) {
       ElMessage.error('请先填写字段值')
       return
     }
@@ -258,11 +242,11 @@ async function handleConfirm() {
 
   console.log('处理后的监听器结构', activeListener.value)
   // 更新面板
-  taskListenerList.value.push({...activeListener.value} as TaskListener)
-  // 添加 field:
-  if (fields && fields.length) {
-    updateFieldsToActiveListener(fields)
-  }
+  if (!taskListenerList.value.includes(activeListener.value))
+    taskListenerList.value.push(activeListener.value)
+  // if (fields && fields.length) {
+  saveFieldsToActiveListener(fields)
+  // }
   // 更新 bpmn 模型
   addActiveListenerToExtensionElementsOfSelectedElement()
   // const bo = bpmnSelectedElem.value?.businessObject
@@ -356,9 +340,9 @@ function handleDeleteListener(listener: TaskListener) {
 
 }
 
-function handleFieldsAdd(listenerFields: ListenerField[]) {
+function handleFieldsAdd(listenerFields: ListenerFieldConfig[]) {
   console.log('handleFieldsAdd', listenerFields)
-  addFieldsToActiveListener(listenerFields)
+  saveFieldsToActiveListener(listenerFields)
 }
 function handleElementChanged() {
 }

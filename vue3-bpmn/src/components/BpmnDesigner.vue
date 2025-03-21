@@ -41,7 +41,6 @@
 // import {useVerApi} from "@/service/workflow/ver";
 import {ElMessage, ElTooltip} from 'element-plus/es'
 import {onMounted, provide, ref, shallowRef} from 'vue'
-import BpmnModeler from 'bpmn-js/lib/Modeler'
 import 'bpmn-js/dist/assets/bpmn-js.css'
 import 'bpmn-js/dist/assets/diagram-js.css'
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css'
@@ -51,14 +50,14 @@ import 'diagram-js-minimap/assets/diagram-js-minimap.css'
 import MiniMap from 'diagram-js-minimap'
 import flowableDescriptor from '@/assets/flowable/descriptor.json'
 // import PropertyPanel from '@/components/bpmn/PropertyPanel.vue'
-import {bpmnModelerKey, bpmnSelectedElemKey} from '@/config/app.keys'
+import {bpmnModelerKey, bpmnSelectedElemKey, type BpmnSelectedElemProvider} from '@/config/app.keys'
 // import {useModelingFieldApi} from "@/service/modeling/field";
 // import XmlEditor from "@/components/common/XmlEditor.vue";
 // import {useModelingPageApi} from "@/service/modeling/page";
 import ElementRegistry from 'diagram-js/lib/core/ElementRegistry'
 import {validate} from './bpmnlint'
 import Canvas from 'diagram-js/lib/core/Canvas'
-import type {Shape} from 'bpmn-js/lib/model/Types'
+import type {Element, Shape} from 'bpmn-js/lib/model/Types'
 import {xmlStr} from '@/mock/xmlStr'
 import {useRoute} from 'vue-router'
 import GridLineModule from 'diagram-js-grid-bg'
@@ -68,6 +67,7 @@ import emitter from '@/event/mitt'
 import {View, FolderOpened, Check, RefreshLeft} from "@element-plus/icons-vue";
 import CustomPropertyPanel from './property-panel/CustomPropertyPanel.vue'
 import CustomCollapsed from './common/CustomCollapsed.vue'
+import Modeler from 'bpmn-js/lib/Modeler'
 const route = useRoute()
 console.log('route', route, route.name)
 // const router = useRouter()
@@ -94,13 +94,37 @@ const diagramRef = ref<HTMLDivElement>()
 onMounted(initDiagram)
 
 const scale = ref<number>(1)
-const bpmnModeler = shallowRef<BpmnModeler>()
+const bpmnModeler = shallowRef<Modeler>()
 provide(bpmnModelerKey, bpmnModeler)
-const bpmnSelectedElem = shallowRef()
-provide(bpmnSelectedElemKey, bpmnSelectedElem)
+function updateBpmnSelectedElem(elem: Element | null) {
+  if (!elem) {
+    return
+  }
+  bpmnSelectedElem.value = elem
+}
+const bpmnSelectedElem = shallowRef<Element | null>(null)
+const bpmnSelectedElemProvider: BpmnSelectedElemProvider = {
+  bpmnSelectedElem,
+  updateBpmnSelectedElem,
+};
+provide(bpmnSelectedElemKey, bpmnSelectedElemProvider)
 
 async function initDiagram() {
-  bpmnModeler.value = new BpmnModeler({
+  new Modeler({
+    container: diagramRef.value,
+    additionalModules: [
+      MiniMap,
+      GridLineModule,
+      MyCustomContextPadProvider
+    ],
+    moddleExtensions: {
+      flowable: flowableDescriptor,
+    },
+    minimap: {
+      open: true,
+    },
+  })
+  bpmnModeler.value = new Modeler({
     container: diagramRef.value,
     // keyboard: {
     //   bindTo: window,
@@ -152,13 +176,16 @@ async function importXML(xml: string) {
       return
     }
 
-    bpmnSelectedElem.value = registry.find((it) => it.type === 'bpmn:Process')
+    bpmnSelectedElem.value = registry.find((it) => it.type === 'bpmn:Process') as Element
+    console.log('bpmnSelectedElemxxx', bpmnSelectedElem.value)
     bpmnModeler.value.on<SelectionChangedEvent>('selection.changed', (e) => {
       console.log('element select change111', e)
+      console.log('new selection', e.newSelection)
       const selectionArray = e.newSelection
+      // bpmnSelectedElem.value = e.newSelection
       bpmnSelectedElem.value = selectionArray?.length
         ? selectionArray[0]
-        : registry.find((it) => it.type === 'bpmn:Process')
+        : registry.find((it) => it.type === 'bpmn:Process') as Element
       emitter.emit('bpmnSelectionChanged', {element: bpmnSelectedElem.value})
     })
     bpmnModeler.value.on<ElementChangedEvent>('element.changed', (e) => {
